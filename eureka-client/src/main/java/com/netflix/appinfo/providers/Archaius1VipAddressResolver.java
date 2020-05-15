@@ -7,6 +7,9 @@ import org.slf4j.LoggerFactory;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * vip地址解析
+ */
 public class Archaius1VipAddressResolver implements VipAddressResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(Archaius1VipAddressResolver.class);
@@ -15,6 +18,8 @@ public class Archaius1VipAddressResolver implements VipAddressResolver {
 
     @Override
     public String resolveDeploymentContextBasedVipAddresses(String vipAddressMacro) {
+        // 将 VIP地址里的 ${(.*?)} 查找配置文件里的键值进行替换。
+        // 例如，${eureka.env}.domain.com，查找配置文件里的键 ${eureka.env} 对应值进行替换
         if (vipAddressMacro == null) {
             return null;
         }

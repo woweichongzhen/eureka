@@ -16,27 +16,19 @@
 
 package com.netflix.discovery.shared.transport;
 
-import java.util.List;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.EurekaClientNames;
-import com.netflix.discovery.shared.resolver.AsyncResolver;
-import com.netflix.discovery.shared.resolver.ClosableResolver;
-import com.netflix.discovery.shared.resolver.ClusterResolver;
-import com.netflix.discovery.shared.resolver.EndpointRandomizer;
-import com.netflix.discovery.shared.resolver.EurekaEndpoint;
-import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
-import com.netflix.discovery.shared.resolver.aws.AwsEndpoint;
-import com.netflix.discovery.shared.resolver.aws.ConfigClusterResolver;
-import com.netflix.discovery.shared.resolver.aws.EurekaHttpResolver;
-import com.netflix.discovery.shared.resolver.aws.ZoneAffinityClusterResolver;
-import com.netflix.discovery.shared.transport.decorator.SessionedEurekaHttpClient;
+import com.netflix.discovery.shared.resolver.*;
+import com.netflix.discovery.shared.resolver.aws.*;
 import com.netflix.discovery.shared.transport.decorator.RedirectingEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.RetryableEurekaHttpClient;
 import com.netflix.discovery.shared.transport.decorator.ServerStatusEvaluators;
+import com.netflix.discovery.shared.transport.decorator.SessionedEurekaHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * @author Tomasz Bak
@@ -48,6 +40,9 @@ public final class EurekaHttpClients {
     private EurekaHttpClients() {
     }
 
+    /**
+     * 创建客户端连接工厂
+     */
     public static EurekaHttpClientFactory queryClientFactory(ClusterResolver bootstrapResolver,
                                                              TransportClientFactory transportClientFactory,
                                                              EurekaClientConfig clientConfig,
@@ -67,7 +62,8 @@ public final class EurekaHttpClients {
     public static EurekaHttpClientFactory registrationClientFactory(ClusterResolver bootstrapResolver,
                                                                     TransportClientFactory transportClientFactory,
                                                                     EurekaTransportConfig transportConfig) {
-        return canonicalClientFactory(EurekaClientNames.REGISTRATION, transportConfig, bootstrapResolver, transportClientFactory);
+        return canonicalClientFactory(EurekaClientNames.REGISTRATION, transportConfig, bootstrapResolver,
+                transportClientFactory);
     }
 
     static EurekaHttpClientFactory canonicalClientFactory(final String name,
@@ -103,6 +99,9 @@ public final class EurekaHttpClients {
 
     public static final String COMPOSITE_BOOTSTRAP_STRATEGY = "composite";
 
+    /**
+     * 创建 EndPoint 解析器
+     */
     public static ClosableResolver<AwsEndpoint> newBootstrapResolver(
             final EurekaClientConfig clientConfig,
             final EurekaTransportConfig transportConfig,
@@ -127,16 +126,22 @@ public final class EurekaHttpClients {
         }
 
         // if all else fails, return the default
+        // 返回默认的解析器
         return defaultBootstrapResolver(clientConfig, myInstanceInfo, randomizer);
     }
 
     /**
+     * 返回默认的解析器
+     * <p>
+     * 返回一个引导解析程序，该解析程序根据DNS或静态配置（*取决于一个或另一个的配置）来解析eureka服务器端点。此解析器将在开始时预热
+     *
      * @return a bootstrap resolver that resolves eureka server endpoints based on either DNS or static config,
-     *         depending on configuration for one or the other. This resolver will warm up at the start.
+     * depending on configuration for one or the other. This resolver will warm up at the start.
      */
     static ClosableResolver<AwsEndpoint> defaultBootstrapResolver(final EurekaClientConfig clientConfig,
                                                                   final InstanceInfo myInstanceInfo,
                                                                   final EndpointRandomizer randomizer) {
+        // 获得 应用实例的 可用区
         String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
         String myZone = InstanceInfo.getZone(availZones, myInstanceInfo);
 
@@ -147,13 +152,17 @@ public final class EurekaHttpClients {
                 randomizer
         );
 
+        // 第一次 EndPoint 解析
         List<AwsEndpoint> initialValue = delegateResolver.getClusterEndpoints();
         if (initialValue.isEmpty()) {
-            String msg = "Initial resolution of Eureka server endpoints failed. Check ConfigClusterResolver logs for more info";
+            String msg = "Initial resolution of Eureka server endpoints failed. Check ConfigClusterResolver logs for " +
+                    "more info";
             logger.error(msg);
+            // 解析不到 Eureka-Server EndPoint ，快速失败
             failFastOnInitCheck(clientConfig, msg);
         }
 
+        // 创建 AsyncResolver，默认已预热
         return new AsyncResolver<>(
                 EurekaClientNames.BOOTSTRAP,
                 delegateResolver,
@@ -165,7 +174,7 @@ public final class EurekaHttpClients {
 
     /**
      * @return a bootstrap resolver that resolves eureka server endpoints via a remote call to a "vip source"
-     *         the local registry, where the source is found from a rootResolver (dns or config)
+     * the local registry, where the source is found from a rootResolver (dns or config)
      */
     static ClosableResolver<AwsEndpoint> compositeBootstrapResolver(
             final EurekaClientConfig clientConfig,
@@ -173,8 +182,7 @@ public final class EurekaHttpClients {
             final TransportClientFactory transportClientFactory,
             final InstanceInfo myInstanceInfo,
             final ApplicationsResolver.ApplicationsSource applicationsSource,
-            final EndpointRandomizer randomizer)
-    {
+            final EndpointRandomizer randomizer) {
         final ClusterResolver rootResolver = new ConfigClusterResolver(clientConfig, myInstanceInfo);
 
         final EurekaHttpResolver remoteResolver = new EurekaHttpResolver(
@@ -211,7 +219,8 @@ public final class EurekaHttpClients {
 
         List<AwsEndpoint> initialValue = compositeResolver.getClusterEndpoints();
         if (initialValue.isEmpty()) {
-            String msg = "Initial resolution of Eureka endpoints failed. Check ConfigClusterResolver logs for more info";
+            String msg = "Initial resolution of Eureka endpoints failed. Check ConfigClusterResolver logs for more " +
+                    "info";
             logger.error(msg);
             failFastOnInitCheck(clientConfig, msg);
         }
@@ -265,10 +274,11 @@ public final class EurekaHttpClients {
 
     /**
      * @return a composite resolver that resolves eureka server endpoints for query operations, given two resolvers:
-     *         a resolver that can resolve targets via a remote call to a remote source, and a resolver that
-     *         can resolve targets via data in the local registry.
+     * a resolver that can resolve targets via a remote call to a remote source, and a resolver that
+     * can resolve targets via data in the local registry.
      */
-    /* testing */ static ClosableResolver<AwsEndpoint> compositeQueryResolver(
+    /* testing */
+    static ClosableResolver<AwsEndpoint> compositeQueryResolver(
             final ClusterResolver<AwsEndpoint> remoteResolver,
             final ClusterResolver<AwsEndpoint> localResolver,
             final EurekaClientConfig clientConfig,

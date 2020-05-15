@@ -16,9 +16,6 @@
 
 package com.netflix.discovery.shared.transport.decorator;
 
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
@@ -29,9 +26,16 @@ import com.netflix.servo.monitor.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicReference;
+
 import static com.netflix.discovery.EurekaClientNames.METRIC_TRANSPORT_PREFIX;
 
 /**
+ * 支持会话的 EurekaHttpClient 。
+ * 执行定期的重建会话，防止一个 Eureka-Client 永远只连接一个特定的 Eureka-Server 。
+ * 反过来，这也保证了 Eureka-Server 集群变更时，Eureka-Client 对 Eureka-Server 连接的负载均衡
+ * <p>
  * {@link SessionedEurekaHttpClient} enforces full reconnect at a regular interval (a session), preventing
  * a client to sticking to a particular Eureka server instance forever. This in turn guarantees even
  * load distribution in case of cluster topology change.
@@ -46,8 +50,15 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
     private final String name;
     private final EurekaHttpClientFactory clientFactory;
     private final long sessionDurationMs;
+
+    /**
+     * 当前会话周期
+     */
     private volatile long currentSessionDurationMs;
 
+    /**
+     * 最后一次连接的时间
+     */
     private volatile long lastReconnectTimeStamp = -1;
     private final AtomicReference<EurekaHttpClient> eurekaHttpClientRef = new AtomicReference<>();
 
@@ -63,6 +74,8 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
     protected <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor) {
         long now = System.currentTimeMillis();
         long delay = now - lastReconnectTimeStamp;
+
+        // 超过 当前会话时间，关闭当前委托的 EurekaHttpClient ，重置连接
         if (delay >= currentSessionDurationMs) {
             logger.debug("Ending a session and starting anew");
             lastReconnectTimeStamp = now;
@@ -70,6 +83,7 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
             TransportUtils.shutdown(eurekaHttpClientRef.getAndSet(null));
         }
 
+        // 获得委托的 EurekaHttpClient 。若不存在，则创建新的委托的 EurekaHttpClient
         EurekaHttpClient eurekaHttpClient = eurekaHttpClientRef.get();
         if (eurekaHttpClient == null) {
             eurekaHttpClient = TransportUtils.getOrSetAnotherClient(eurekaHttpClientRef, clientFactory.newClient());
@@ -79,13 +93,16 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
 
     @Override
     public void shutdown() {
-        if(Monitors.isObjectRegistered(name, this)) {
+        if (Monitors.isObjectRegistered(name, this)) {
             Monitors.unregisterObject(name, this);
         }
         TransportUtils.shutdown(eurekaHttpClientRef.getAndSet(null));
     }
 
     /**
+     * sessionDurationMs * (0.5, 1.5)
+     * 增加会话过期的随机性，实现所有 Eureka-Client 的会话过期重连的发生时间更加离散，避免集中时间过期。
+     *
      * @return a randomized sessionDuration in ms calculated as +/- an additional amount in [0, sessionDurationMs/2]
      */
     protected long randomizeSessionDuration(long sessionDurationMs) {

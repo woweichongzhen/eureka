@@ -21,10 +21,11 @@ import com.netflix.appinfo.providers.MyDataCenterInstanceConfigProvider;
 import javax.inject.Singleton;
 
 /**
+ * 非 AWS 数据中心的 Eureka 应用实例配置实现类
+ * <p>
  * An {@link InstanceInfo} configuration for the non-AWS datacenter.
  *
  * @author Karthik Ranganathan
- *
  */
 @Singleton
 @ProvidedBy(MyDataCenterInstanceConfigProvider.class)

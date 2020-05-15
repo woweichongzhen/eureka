@@ -3,6 +3,8 @@ package com.netflix.discovery.shared.transport.jersey;
 import com.sun.jersey.client.apache4.ApacheHttpClient4;
 
 /**
+ * EurekaHttpClient 接口
+ *
  * @author David Liu
  */
 public interface EurekaJerseyClient {

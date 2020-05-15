@@ -16,38 +16,29 @@
 
 package com.netflix.eureka.resources;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-
-import com.netflix.appinfo.AmazonInfo;
-import com.netflix.appinfo.DataCenterInfo;
-import com.netflix.appinfo.EurekaAccept;
-import com.netflix.appinfo.InstanceInfo;
-import com.netflix.appinfo.UniqueIdentifier;
+import com.netflix.appinfo.*;
 import com.netflix.eureka.EurekaServerConfig;
-import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.Version;
 import com.netflix.eureka.cluster.PeerEurekaNode;
-import com.netflix.eureka.registry.ResponseCache;
-import com.netflix.eureka.registry.Key.KeyType;
 import com.netflix.eureka.registry.Key;
+import com.netflix.eureka.registry.Key.KeyType;
+import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
+import com.netflix.eureka.registry.ResponseCache;
 import com.netflix.eureka.util.EurekaMonitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.*;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+
 /**
+ * 处理同一分区的单个app请求
+ * <p>
  * A <em>jersey</em> resource that handles request related to a particular
  * {@link com.netflix.discovery.shared.Application}.
  *
  * @author Karthik Ranganathan, Greg Kim
- *
  */
 @Produces({"application/xml", "application/json"})
 public class ApplicationResource {
@@ -74,13 +65,11 @@ public class ApplicationResource {
     /**
      * Gets information about a particular {@link com.netflix.discovery.shared.Application}.
      *
-     * @param version
-     *            the version of the request.
-     * @param acceptHeader
-     *            the accept header of the request to indicate whether to serve
-     *            JSON or XML data.
+     * @param version      the version of the request.
+     * @param acceptHeader the accept header of the request to indicate whether to serve
+     *                     JSON or XML data.
      * @return the response containing information about a particular
-     *         application.
+     * application.
      */
     @GET
     public Response getApplication(@PathParam("version") String version,
@@ -121,8 +110,7 @@ public class ApplicationResource {
     /**
      * Gets information about a particular instance of an application.
      *
-     * @param id
-     *            the unique identifier of the instance.
+     * @param id the unique identifier of the instance.
      * @return information about a particular instance.
      */
     @Path("{id}")
@@ -131,14 +119,14 @@ public class ApplicationResource {
     }
 
     /**
+     * 注册同一分区的实例信息
+     * <p>
      * Registers information about a particular instance for an
      * {@link com.netflix.discovery.shared.Application}.
      *
-     * @param info
-     *            {@link InstanceInfo} information of the instance.
-     * @param isReplication
-     *            a header parameter containing information whether this is
-     *            replicated from other nodes.
+     * @param info          {@link InstanceInfo} information of the instance.
+     * @param isReplication a header parameter containing information whether this is
+     *                      replicated from other nodes.
      */
     @POST
     @Consumes({"application/json", "application/xml"})
@@ -146,6 +134,7 @@ public class ApplicationResource {
                                 @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
         logger.debug("Registering instance {} (replication={})", info.getId(), isReplication);
         // validate that the instanceinfo contains all the necessary required fields
+        // 校验实例信息的参数内容
         if (isBlank(info.getId())) {
             return Response.status(400).entity("Missing instanceId").build();
         } else if (isBlank(info.getHostName())) {
@@ -163,11 +152,13 @@ public class ApplicationResource {
         }
 
         // handle cases where clients may be registering with bad DataCenterInfo with missing data
+        // AWS
         DataCenterInfo dataCenterInfo = info.getDataCenterInfo();
         if (dataCenterInfo instanceof UniqueIdentifier) {
             String dataCenterInfoId = ((UniqueIdentifier) dataCenterInfo).getId();
             if (isBlank(dataCenterInfoId)) {
-                boolean experimental = "true".equalsIgnoreCase(serverConfig.getExperimental("registration.validation.dataCenterInfoId"));
+                boolean experimental = "true".equalsIgnoreCase(serverConfig.getExperimental("registration.validation" +
+                        ".dataCenterInfoId"));
                 if (experimental) {
                     String entity = "DataCenterInfo of type " + dataCenterInfo.getClass() + " must contain a valid id";
                     return Response.status(400).entity(entity).build();
@@ -178,12 +169,15 @@ public class ApplicationResource {
                         amazonInfo.getMetadata().put(AmazonInfo.MetaDataKey.instanceId.getName(), info.getId());
                     }
                 } else {
-                    logger.warn("Registering DataCenterInfo of type {} without an appropriate id", dataCenterInfo.getClass());
+                    logger.warn("Registering DataCenterInfo of type {} without an appropriate id",
+                            dataCenterInfo.getClass());
                 }
             }
         }
 
+        // 向注册表中注册
         registry.register(info, "true".equals(isReplication));
+        // 204成功
         return Response.status(204).build();  // 204 to be backwards compatible
     }
 

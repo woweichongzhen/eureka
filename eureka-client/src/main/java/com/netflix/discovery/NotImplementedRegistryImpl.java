@@ -1,10 +1,12 @@
 package com.netflix.discovery;
 
-import javax.inject.Singleton;
-
 import com.netflix.discovery.shared.Applications;
 
+import javax.inject.Singleton;
+
 /**
+ * 未实现的后备注册中心
+ *
  * @author Nitesh Kant
  */
 @Singleton

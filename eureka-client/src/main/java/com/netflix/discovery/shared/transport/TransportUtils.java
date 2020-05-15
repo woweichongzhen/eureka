@@ -19,6 +19,8 @@ package com.netflix.discovery.shared.transport;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * 传输会话工具类
+ *
  * @author Tomasz Bak
  */
 public final class TransportUtils {
@@ -26,11 +28,20 @@ public final class TransportUtils {
     private TransportUtils() {
     }
 
-    public static EurekaHttpClient getOrSetAnotherClient(AtomicReference<EurekaHttpClient> eurekaHttpClientRef, EurekaHttpClient another) {
+    /**
+     * 获取http客户端
+     *
+     * @param eurekaHttpClientRef 上一个客户端引用
+     * @param another             创建新客户端的方式
+     * @return 返回一个非空的
+     */
+    public static EurekaHttpClient getOrSetAnotherClient(AtomicReference<EurekaHttpClient> eurekaHttpClientRef,
+                                                         EurekaHttpClient another) {
         EurekaHttpClient existing = eurekaHttpClientRef.get();
         if (eurekaHttpClientRef.compareAndSet(null, another)) {
             return another;
         }
+        // 设置失败，其他线程已设置客户端，直接关闭用来替代的这个
         another.shutdown();
         return existing;
     }

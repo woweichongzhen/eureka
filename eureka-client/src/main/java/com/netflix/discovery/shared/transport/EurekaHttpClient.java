@@ -6,6 +6,7 @@ import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 
 /**
+ * 底层的eureka http客户端api
  * Low level Eureka HTTP client API.
  *
  * @author Tomasz Bak
@@ -16,7 +17,8 @@ public interface EurekaHttpClient {
 
     EurekaHttpResponse<Void> cancel(String appName, String id);
 
-    EurekaHttpResponse<InstanceInfo> sendHeartBeat(String appName, String id, InstanceInfo info, InstanceStatus overriddenStatus);
+    EurekaHttpResponse<InstanceInfo> sendHeartBeat(String appName, String id, InstanceInfo info,
+                                                   InstanceStatus overriddenStatus);
 
     EurekaHttpResponse<Void> statusUpdate(String appName, String id, InstanceStatus newStatus, InstanceInfo info);
 

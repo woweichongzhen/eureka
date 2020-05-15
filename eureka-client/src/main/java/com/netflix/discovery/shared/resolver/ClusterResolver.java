@@ -19,11 +19,19 @@ package com.netflix.discovery.shared.resolver;
 import java.util.List;
 
 /**
+ * 集群解析器接口
+ *
  * @author Tomasz Bak
  */
 public interface ClusterResolver<T extends EurekaEndpoint> {
 
+    /**
+     * @return 地区
+     */
     String getRegion();
 
+    /**
+     * @return 集群端点数组
+     */
     List<T> getClusterEndpoints();
 }

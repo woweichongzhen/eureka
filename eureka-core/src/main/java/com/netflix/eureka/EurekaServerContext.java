@@ -22,6 +22,8 @@ import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.resources.ServerCodecs;
 
 /**
+ * Eureka-Server 上下文接口，提供Eureka-Server 内部各组件对象的初始化、关闭、获取等方法。
+ *
  * @author David Liu
  */
 public interface EurekaServerContext {

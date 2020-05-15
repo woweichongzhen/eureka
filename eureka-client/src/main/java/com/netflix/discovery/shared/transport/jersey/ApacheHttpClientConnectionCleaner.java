@@ -16,23 +16,20 @@
 
 package com.netflix.discovery.shared.transport.jersey;
 
+import com.netflix.servo.monitor.*;
+import com.sun.jersey.client.apache4.ApacheHttpClient4;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.netflix.servo.monitor.BasicCounter;
-import com.netflix.servo.monitor.BasicTimer;
-import com.netflix.servo.monitor.Counter;
-import com.netflix.servo.monitor.MonitorConfig;
-import com.netflix.servo.monitor.Monitors;
-import com.netflix.servo.monitor.Stopwatch;
-import com.sun.jersey.client.apache4.ApacheHttpClient4;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
+ * Apache HttpClient 空闲连接清理器，负责周期性关闭处于 half-close 状态的空闲连接。
+ * <p>
  * A periodic process running in background cleaning Apache http client connection pool out of idle connections.
  * This prevents from accumulating unused connections in half-closed state.
  */

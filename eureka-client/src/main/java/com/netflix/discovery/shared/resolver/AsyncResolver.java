@@ -10,18 +10,17 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.netflix.discovery.EurekaClientNames.METRIC_RESOLVER_PREFIX;
 
 /**
+ * 异步执行解析的集群解析器
+ * <p>
+ * 一个异步解析器，用于保存获取的端点列表值的缓存版本，并在另一个线程中定期更新此缓存
+ * <p>
  * An async resolver that keeps a cached version of the endpoint list value for gets, and updates this cache
  * periodically in a different thread.
  *
@@ -33,16 +32,49 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
     // Note that warm up is best effort. If the resolver is accessed by multiple threads pre warmup,
     // only the first thread will block for the warmup (up to the configurable timeout).
     private final AtomicBoolean warmedUp = new AtomicBoolean(false);
+
+    /**
+     * 是否已经调度定时任务
+     */
     private final AtomicBoolean scheduled = new AtomicBoolean(false);
 
     private final String name;    // a name for metric purposes
+
+    /**
+     * 委托的解析器
+     * 目前代码为 {@link com.netflix.discovery.shared.resolver.aws.ZoneAffinityClusterResolver}
+     */
     private final ClusterResolver<T> delegate;
+
+    /**
+     * 定时服务
+     */
     private final ScheduledExecutorService executorService;
+
+    /**
+     * 线程池执行器
+     */
     private final ThreadPoolExecutor threadPoolExecutor;
+
+    /**
+     * 后台任务
+     * 定时解析 EndPoint 集群
+     */
     private final TimedSupervisorTask backgroundTask;
+
+    /**
+     * 解析 EndPoint 集群结果
+     */
     private final AtomicReference<List<T>> resultsRef;
 
+    /**
+     * 定时解析 EndPoint 集群的频率
+     */
     private final int refreshIntervalMs;
+
+    /**
+     * 预热超时时间，单位：毫秒
+     */
     private final int warmUpTimeoutMs;
 
     // Metric timestamp, tracking last time when data were effectively changed.
@@ -86,15 +118,16 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
                 0
         );
 
+        // 此构造方法默认为已经预热
         warmedUp.set(true);
     }
 
     /**
-     * @param delegate the delegate resolver to async resolve from
-     * @param initialValue the initial value to use
+     * @param delegate               the delegate resolver to async resolve from
+     * @param initialValue           the initial value to use
      * @param executorThreadPoolSize the max number of threads for the threadpool
-     * @param refreshIntervalMs the async refresh interval
-     * @param warmUpTimeoutMs the time to wait for the initial warm up
+     * @param refreshIntervalMs      the async refresh interval
+     * @param warmUpTimeoutMs        the time to wait for the initial warm up
      */
     AsyncResolver(String name,
                   ClusterResolver<T> delegate,
@@ -107,14 +140,19 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         this.refreshIntervalMs = refreshIntervalMs;
         this.warmUpTimeoutMs = warmUpTimeoutMs;
 
+        // 初始化定时任务线程池
         this.executorService = Executors.newScheduledThreadPool(1,
                 new ThreadFactoryBuilder()
                         .setNameFormat("AsyncResolver-" + name + "-%d")
                         .setDaemon(true)
                         .build());
 
+        // 初始化执行线程池
         this.threadPoolExecutor = new ThreadPoolExecutor(
-                1, executorThreadPoolSize, 0, TimeUnit.SECONDS,
+                1,
+                executorThreadPoolSize,
+                0,
+                TimeUnit.SECONDS,
                 new SynchronousQueue<Runnable>(),  // use direct handoff
                 new ThreadFactoryBuilder()
                         .setNameFormat("AsyncResolver-" + name + "-executor-%d")
@@ -122,6 +160,7 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
                         .build()
         );
 
+        // 初始化后台任务
         this.backgroundTask = new TimedSupervisorTask(
                 this.getClass().getSimpleName(),
                 executorService,
@@ -138,7 +177,7 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
 
     @Override
     public void shutdown() {
-        if(Monitors.isObjectRegistered(name, this)) {
+        if (Monitors.isObjectRegistered(name, this)) {
             Monitors.unregisterObject(name, this);
         }
         executorService.shutdownNow();
@@ -155,11 +194,13 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
     @Override
     public List<T> getClusterEndpoints() {
         long delay = refreshIntervalMs;
+        // 若未预热解析 EndPoint 集群结果，进行预热
         if (warmedUp.compareAndSet(false, true)) {
             if (!doWarmUp()) {
                 delay = 0;
             }
         }
+        // 未提交定时任务，进行提交
         if (scheduled.compareAndSet(false, true)) {
             scheduleTask(delay);
         }
@@ -167,15 +208,20 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
     }
 
 
+    /**
+     * 预热
+     */
     /* visible for testing */ boolean doWarmUp() {
         Future future = null;
         try {
+            // 直接执行，阻塞预热时间
             future = threadPoolExecutor.submit(updateTask);
             future.get(warmUpTimeoutMs, TimeUnit.MILLISECONDS);  // block until done or timeout
             return true;
         } catch (Exception e) {
             logger.warn("Best effort warm up failed", e);
         } finally {
+            // 未完成直接中断
             if (future != null) {
                 future.cancel(true);
             }
@@ -200,6 +246,9 @@ public class AsyncResolver<T extends EurekaEndpoint> implements ClosableResolver
         return resultsRef.get().size();  // return directly from the ref and not the method so as to not trigger warming
     }
 
+    /**
+     * 后台更新任务
+     */
     private final Runnable updateTask = new Runnable() {
         @Override
         public void run() {

@@ -20,6 +20,7 @@ package com.netflix.eureka.resources;
 import com.netflix.eureka.Version;
 
 /**
+ * 当前线程请求的api版本
  * A thread-scoped value that holds the "current {@link com.netflix.eureka.Version}" for the
  * request.
  *
@@ -48,7 +49,7 @@ public final class CurrentRequestVersion {
 
     /**
      * Sets the current {@link Version}.
-     *
+     * <p>
      * Use {@link #remove()} as soon as the version is no longer required
      * in order to purge the ThreadLocal used for storing it.
      */

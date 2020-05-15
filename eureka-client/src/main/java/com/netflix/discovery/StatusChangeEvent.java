@@ -3,12 +3,21 @@ package com.netflix.discovery;
 import com.netflix.appinfo.InstanceInfo;
 
 /**
+ * 状态改变事件，服务状态改变时，同步给 eureka event bus
  * Event containing the latest instance status information.  This event
  * is sent to the {@link com.netflix.eventbus.spi.EventBus} by {@link EurekaClient) whenever
  * a status change is identified from the remote Eureka server response.
  */
 public class StatusChangeEvent extends DiscoveryEvent {
+
+    /**
+     * 改变之后
+     */
     private final InstanceInfo.InstanceStatus current;
+
+    /**
+     * 改变之前
+     */
     private final InstanceInfo.InstanceStatus previous;
 
     public StatusChangeEvent(InstanceInfo.InstanceStatus previous, InstanceInfo.InstanceStatus current) {
@@ -19,6 +28,7 @@ public class StatusChangeEvent extends DiscoveryEvent {
 
     /**
      * Return the up current when the event was generated.
+     *
      * @return true if current is up or false for ALL other current values
      */
     public boolean isUp() {

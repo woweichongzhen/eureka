@@ -5,14 +5,7 @@ import com.netflix.discovery.EurekaClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * This class contains some of the utility functions previously found in DiscoveryClient, but should be elsewhere.
@@ -63,15 +56,16 @@ public class EndpointUtils {
     }
 
     /**
+     * // 获取eureka服务url地址
      * Get the list of all eureka service urls for the eureka client to talk to.
      *
      * @param clientConfig the clientConfig to use
-     * @param zone the zone in which the client resides
-     * @param randomizer a randomizer to randomized returned urls, if loading from dns
-     *
+     * @param zone         the zone in which the client resides
+     * @param randomizer   a randomizer to randomized returned urls, if loading from dns
      * @return The list of all eureka service urls for the eureka client to talk to.
      */
-    public static List<String> getDiscoveryServiceUrls(EurekaClientConfig clientConfig, String zone, ServiceUrlRandomizer randomizer) {
+    public static List<String> getDiscoveryServiceUrls(EurekaClientConfig clientConfig, String zone,
+                                                       ServiceUrlRandomizer randomizer) {
         boolean shouldUseDns = clientConfig.shouldUseDnsForFetchingServiceUrls();
         if (shouldUseDns) {
             return getServiceUrlsFromDNS(clientConfig, zone, clientConfig.shouldPreferSameZoneEureka(), randomizer);
@@ -85,14 +79,14 @@ public class EndpointUtils {
      * other zones randomly. If there are multiple servers in the same zone, the client once
      * again picks one randomly. This way the traffic will be distributed in the case of failures.
      *
-     * @param clientConfig the clientConfig to use
-     * @param instanceZone The zone in which the client resides.
+     * @param clientConfig   the clientConfig to use
+     * @param instanceZone   The zone in which the client resides.
      * @param preferSameZone true if we have to prefer the same zone as the client, false otherwise.
-     * @param randomizer a randomizer to randomized returned urls
-     *
+     * @param randomizer     a randomizer to randomized returned urls
      * @return The list of all eureka service urls for the eureka client to talk to.
      */
-    public static List<String> getServiceUrlsFromDNS(EurekaClientConfig clientConfig, String instanceZone, boolean preferSameZone, ServiceUrlRandomizer randomizer) {
+    public static List<String> getServiceUrlsFromDNS(EurekaClientConfig clientConfig, String instanceZone,
+                                                     boolean preferSameZone, ServiceUrlRandomizer randomizer) {
         String region = getRegion(clientConfig);
         // Get zone-specific DNS names for the given region so that we can get a
         // list of available zones
@@ -139,7 +133,8 @@ public class EndpointUtils {
         List<String> serviceUrls = new ArrayList<String>();
         for (String zone : zones) {
             for (String zoneCname : zoneDnsNamesMap.get(zone)) {
-                List<String> ec2Urls = new ArrayList<String>(getEC2DiscoveryUrlsFromZone(zoneCname, DiscoveryUrlType.CNAME));
+                List<String> ec2Urls = new ArrayList<String>(getEC2DiscoveryUrlsFromZone(zoneCname,
+                        DiscoveryUrlType.CNAME));
                 // Rearrange the list to distribute the load in case of multiple servers
                 if (ec2Urls.size() > 1) {
                     randomizer.randomize(ec2Urls);
@@ -180,28 +175,36 @@ public class EndpointUtils {
     }
 
     /**
+     * 从可用地区中获取eureka服务url
      * Get the list of all eureka service urls from properties file for the eureka client to talk to.
      *
-     * @param clientConfig the clientConfig to use
-     * @param instanceZone The zone in which the client resides
+     * @param clientConfig   the clientConfig to use
+     * @param instanceZone   The zone in which the client resides
      * @param preferSameZone true if we have to prefer the same zone as the client, false otherwise
      * @return The list of all eureka service urls for the eureka client to talk to
      */
-    public static List<String> getServiceUrlsFromConfig(EurekaClientConfig clientConfig, String instanceZone, boolean preferSameZone) {
+    public static List<String> getServiceUrlsFromConfig(EurekaClientConfig clientConfig, String instanceZone,
+                                                        boolean preferSameZone) {
         List<String> orderedUrls = new ArrayList<String>();
+        // 获取大区
         String region = getRegion(clientConfig);
+        // 获取大区可用的中心
         String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
         if (availZones == null || availZones.length == 0) {
             availZones = new String[1];
             availZones[0] = DEFAULT_ZONE;
         }
         logger.debug("The availability zone for the given region {} are {}", region, availZones);
+        // 获取中心所在所有中心的索引，没有取第一个
         int myZoneOffset = getZoneOffset(instanceZone, preferSameZone, availZones);
 
+        // 获取可用服务url
         List<String> serviceUrls = clientConfig.getEurekaServerServiceUrls(availZones[myZoneOffset]);
         if (serviceUrls != null) {
             orderedUrls.addAll(serviceUrls);
         }
+
+        // 从当前索引开始往后遍历中心，获取其他中心的服务url
         int currentOffset = myZoneOffset == (availZones.length - 1) ? 0 : (myZoneOffset + 1);
         while (currentOffset != myZoneOffset) {
             serviceUrls = clientConfig.getEurekaServerServiceUrls(availZones[currentOffset]);
@@ -222,14 +225,18 @@ public class EndpointUtils {
     }
 
     /**
+     * 获取所有eureka服务url的列表，以供eureka客户端与之交谈
+     * <p>
      * Get the list of all eureka service urls from properties file for the eureka client to talk to.
      *
-     * @param clientConfig the clientConfig to use
-     * @param instanceZone The zone in which the client resides
+     * @param clientConfig   the clientConfig to use
+     * @param instanceZone   The zone in which the client resides
      * @param preferSameZone true if we have to prefer the same zone as the client, false otherwise
      * @return an (ordered) map of zone -> list of urls mappings, with the preferred zone first in iteration order
      */
-    public static Map<String, List<String>> getServiceUrlsMapFromConfig(EurekaClientConfig clientConfig, String instanceZone, boolean preferSameZone) {
+    public static Map<String, List<String>> getServiceUrlsMapFromConfig(EurekaClientConfig clientConfig,
+                                                                        String instanceZone, boolean preferSameZone) {
+        // 获取可用区域，不存在使用默认 default
         Map<String, List<String>> orderedUrls = new LinkedHashMap<>();
         String region = getRegion(clientConfig);
         String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
@@ -238,13 +245,17 @@ public class EndpointUtils {
             availZones[0] = DEFAULT_ZONE;
         }
         logger.debug("The availability zone for the given region {} are {}", region, availZones);
+        // 可用区域在数组中的索引
         int myZoneOffset = getZoneOffset(instanceZone, preferSameZone, availZones);
 
+        // 将 开始位置 的 serviceUrls 添加到结果
         String zone = availZones[myZoneOffset];
         List<String> serviceUrls = clientConfig.getEurekaServerServiceUrls(zone);
         if (serviceUrls != null) {
             orderedUrls.put(zone, serviceUrls);
         }
+
+        // 从开始位置顺序遍历剩余的 serviceUrls 添加到结果
         int currentOffset = myZoneOffset == (availZones.length - 1) ? 0 : (myZoneOffset + 1);
         while (currentOffset != myZoneOffset) {
             zone = availZones[currentOffset];
@@ -269,7 +280,7 @@ public class EndpointUtils {
      * Get the list of EC2 URLs given the zone name.
      *
      * @param dnsName The dns name of the zone-specific CNAME
-     * @param type CNAME or EIP that needs to be retrieved
+     * @param type    CNAME or EIP that needs to be retrieved
      * @return The list of EC2 URLs associated with the dns name
      */
     public static Set<String> getEC2DiscoveryUrlsFromZone(String dnsName, DiscoveryUrlType type) {
@@ -309,12 +320,12 @@ public class EndpointUtils {
     /**
      * Get the zone based CNAMES that are bound to a region.
      *
-     * @param region
-     *            - The region for which the zone names need to be retrieved
+     * @param region - The region for which the zone names need to be retrieved
      * @return - The list of CNAMES from which the zone-related information can
-     *         be retrieved
+     * be retrieved
      */
-    public static Map<String, List<String>> getZoneBasedDiscoveryUrlsFromRegion(EurekaClientConfig clientConfig, String region) {
+    public static Map<String, List<String>> getZoneBasedDiscoveryUrlsFromRegion(EurekaClientConfig clientConfig,
+                                                                                String region) {
         String discoveryDnsName = null;
         try {
             discoveryDnsName = "txt." + region + "." + clientConfig.getEurekaServerDNSName();
@@ -349,6 +360,7 @@ public class EndpointUtils {
     }
 
     /**
+     * 获取实例所在的大区
      * Get the region that this particular instance is in.
      *
      * @return - The region in which the particular instance belongs to.
@@ -368,6 +380,8 @@ public class EndpointUtils {
     }
 
     /**
+     * 获取实例所在的区域在数组中的索引
+     * <p>
      * Gets the zone to pick up for this instance.
      */
     private static int getZoneOffset(String myZone, boolean preferSameZone, String[] availZones) {

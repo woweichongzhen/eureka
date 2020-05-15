@@ -1,23 +1,26 @@
 package com.netflix.appinfo;
 
+import com.netflix.discovery.converters.wrappers.CodecWrappers;
+import com.netflix.discovery.converters.wrappers.CodecWrappers.*;
+import com.netflix.discovery.converters.wrappers.DecoderWrapper;
+
 import java.util.HashMap;
 import java.util.Map;
 
-import com.netflix.discovery.converters.wrappers.CodecWrappers;
-import com.netflix.discovery.converters.wrappers.CodecWrappers.JacksonJson;
-import com.netflix.discovery.converters.wrappers.CodecWrappers.JacksonJsonMini;
-import com.netflix.discovery.converters.wrappers.CodecWrappers.JacksonXml;
-import com.netflix.discovery.converters.wrappers.CodecWrappers.JacksonXmlMini;
-import com.netflix.discovery.converters.wrappers.CodecWrappers.LegacyJacksonJson;
-import com.netflix.discovery.converters.wrappers.CodecWrappers.XStreamJson;
-import com.netflix.discovery.converters.wrappers.CodecWrappers.XStreamXml;
-import com.netflix.discovery.converters.wrappers.DecoderWrapper;
-
 /**
+ * eureaka可接受请求头类型
+ *
  * @author David Liu
  */
 public enum EurekaAccept {
-    full, compact;
+    /**
+     * 所有
+     */
+    full,
+    /**
+     * 压缩
+     */
+    compact;
 
     public static final String HTTP_X_EUREKA_ACCEPT = "X-Eureka-Accept";
 

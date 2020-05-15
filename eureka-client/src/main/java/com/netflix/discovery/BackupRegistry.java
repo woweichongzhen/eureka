@@ -20,6 +20,9 @@ import com.google.inject.ImplementedBy;
 import com.netflix.discovery.shared.Applications;
 
 /**
+ * 备份注册中心接口
+ * 当 Eureka-Client 启动时，无法从 Eureka-Server 读取注册信息（可能挂了），从备份注册中心读取注册信息
+ * <p>
  * A simple contract for <em>eureka</em> clients to fallback for getting
  * registry information in case eureka clients are unable to retrieve this
  * information from any of the <em>eureka</em> servers.
@@ -30,7 +33,6 @@ import com.netflix.discovery.shared.Applications;
  * </p>
  *
  * @author Karthik Ranganathan
- *
  */
 @ImplementedBy(NotImplementedRegistryImpl.class)
 public interface BackupRegistry {

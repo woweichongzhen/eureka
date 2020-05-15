@@ -16,12 +16,6 @@
 
 package com.netflix.discovery;
 
-import javax.annotation.Nullable;
-import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import com.google.inject.ProvidedBy;
 import com.netflix.appinfo.EurekaAccept;
 import com.netflix.config.DynamicPropertyFactory;
@@ -31,10 +25,17 @@ import com.netflix.discovery.providers.DefaultEurekaClientConfigProvider;
 import com.netflix.discovery.shared.transport.DefaultEurekaTransportConfig;
 import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 
+import javax.annotation.Nullable;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import static com.netflix.discovery.PropertyBasedClientConfigConstants.*;
 
 /**
- *
+ * 基于配置文件的 Eureka-Client 配置实现类
+ * <p>
  * A default implementation of eureka client configuration as required by
  * {@link EurekaClientConfig}.
  *
@@ -54,7 +55,6 @@ import static com.netflix.discovery.PropertyBasedClientConfigConstants.*;
  * </p>
  *
  * @author Karthik Ranganathan
- *
  */
 @Singleton
 @ProvidedBy(DefaultEurekaClientConfigProvider.class)
@@ -65,11 +65,24 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
      */
     @Deprecated
     public static final String DEFAULT_NAMESPACE = CommonConstants.DEFAULT_CONFIG_NAMESPACE + ".";
+
     public static final String DEFAULT_ZONE = "defaultZone";
+
     public static final String URL_SEPARATOR = "\\s*,\\s*";
 
+    /**
+     * 命名空间
+     */
     private final String namespace;
+
+    /**
+     * 配置文件对象
+     */
     private final DynamicPropertyFactory configInstance;
+
+    /**
+     * http传输配置
+     */
     private final EurekaTransportConfig transportConfig;
 
     public DefaultEurekaClientConfig() {
@@ -77,11 +90,15 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     }
 
     public DefaultEurekaClientConfig(String namespace) {
+        // 设置 namespace，为 "." 结尾
         this.namespace = namespace.endsWith(".")
                 ? namespace
                 : namespace + ".";
 
+        // 初始化 配置文件对象
         this.configInstance = Archaius1Utils.initConfig(CommonConstants.CONFIG_FILE_NAME);
+
+        // 创建 HTTP 传输配置
         this.transportConfig = new DefaultEurekaTransportConfig(namespace, configInstance);
     }
 
@@ -301,7 +318,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     @Override
     public boolean shouldUnregisterOnShutdown() {
         return configInstance.getBooleanProperty(
-              namespace + SHOULD_UNREGISTER_ON_SHUTDOWN_KEY, true).get();
+                namespace + SHOULD_UNREGISTER_ON_SHUTDOWN_KEY, true).get();
     }
 
     /*
@@ -321,10 +338,10 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     }
 
     /*
-         * (non-Javadoc)
-         *
-         * @see com.netflix.discovery.EurekaClientConfig#shouldLogDeltaDiff()
-         */
+     * (non-Javadoc)
+     *
+     * @see com.netflix.discovery.EurekaClientConfig#shouldLogDeltaDiff()
+     */
     @Override
     public boolean shouldLogDeltaDiff() {
         return configInstance.getBooleanProperty(
@@ -349,13 +366,16 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     }
 
     /*
+     * 默认 us-east-1
+     *
      * (non-Javadoc)
      *
      * @see com.netflix.discovery.EurekaClientConfig#getRegion()
      */
     @Override
     public String getRegion() {
-        DynamicStringProperty defaultEurekaRegion = configInstance.getStringProperty(CLIENT_REGION_FALLBACK_KEY, Values.DEFAULT_CLIENT_REGION);
+        DynamicStringProperty defaultEurekaRegion = configInstance.getStringProperty(CLIENT_REGION_FALLBACK_KEY,
+                Values.DEFAULT_CLIENT_REGION);
         return configInstance.getStringProperty(namespace + CLIENT_REGION_KEY, defaultEurekaRegion.get()).get();
     }
 
@@ -366,14 +386,14 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
      */
     @Override
     public String[] getAvailabilityZones(String region) {
-        return configInstance
-                .getStringProperty(
-                        namespace + region + "." + CONFIG_AVAILABILITY_ZONE_PREFIX,
-                        DEFAULT_ZONE).get().split(URL_SEPARATOR);
+        return configInstance.getStringProperty(
+                namespace + region + "." + CONFIG_AVAILABILITY_ZONE_PREFIX,
+                DEFAULT_ZONE).get().split(URL_SEPARATOR);
     }
 
     /*
      * (non-Javadoc)
+     *
      *
      * @see
      * com.netflix.discovery.EurekaClientConfig#getEurekaServerServiceUrls()

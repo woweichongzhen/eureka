@@ -17,7 +17,6 @@
 package com.netflix.eureka;
 
 import com.netflix.appinfo.ApplicationInfoManager;
-import com.netflix.discovery.DiscoveryManager;
 import com.netflix.eureka.cluster.PeerEurekaNodes;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.resources.ServerCodecs;
@@ -32,6 +31,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
+ * eureka server 服务上下文
+ * <p>
  * Represent the local server context and exposes getters to components of the
  * local server such as the registry.
  *
@@ -41,18 +42,37 @@ import javax.inject.Singleton;
 public class DefaultEurekaServerContext implements EurekaServerContext {
     private static final Logger logger = LoggerFactory.getLogger(DefaultEurekaServerContext.class);
 
+    /**
+     * Eureka-Server 配置
+     */
     private final EurekaServerConfig serverConfig;
+
+    /**
+     * Eureka-Server 请求和响应编解码器
+     */
     private final ServerCodecs serverCodecs;
+
+    /**
+     * 应用实例信息的注册表
+     */
     private final PeerAwareInstanceRegistry registry;
+
+    /**
+     * Eureka-Server 集群节点集合
+     */
     private final PeerEurekaNodes peerEurekaNodes;
+
+    /**
+     * 应用实例信息管理器
+     */
     private final ApplicationInfoManager applicationInfoManager;
 
     @Inject
     public DefaultEurekaServerContext(EurekaServerConfig serverConfig,
-                               ServerCodecs serverCodecs,
-                               PeerAwareInstanceRegistry registry,
-                               PeerEurekaNodes peerEurekaNodes,
-                               ApplicationInfoManager applicationInfoManager) {
+                                      ServerCodecs serverCodecs,
+                                      PeerAwareInstanceRegistry registry,
+                                      PeerEurekaNodes peerEurekaNodes,
+                                      ApplicationInfoManager applicationInfoManager) {
         this.serverConfig = serverConfig;
         this.serverCodecs = serverCodecs;
         this.registry = registry;
@@ -64,8 +84,10 @@ public class DefaultEurekaServerContext implements EurekaServerContext {
     @Override
     public void initialize() {
         logger.info("Initializing ...");
+        // 启动 Eureka-Server 集群节点集合（复制）
         peerEurekaNodes.start();
         try {
+            // 初始化注册表依赖的一些基本信息
             registry.init(peerEurekaNodes);
         } catch (Exception e) {
             throw new RuntimeException(e);

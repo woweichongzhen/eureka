@@ -16,10 +16,6 @@
 
 package com.netflix.discovery.shared.transport.decorator;
 
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import com.netflix.discovery.EurekaClientNames;
 import com.netflix.discovery.shared.resolver.EurekaEndpoint;
 import com.netflix.discovery.shared.transport.EurekaHttpClient;
@@ -29,30 +25,47 @@ import com.netflix.discovery.shared.transport.TransportClientFactory;
 import com.netflix.discovery.shared.transport.decorator.MetricsCollectingEurekaHttpClient.EurekaHttpClientRequestMetrics.Status;
 import com.netflix.discovery.util.ExceptionsMetric;
 import com.netflix.discovery.util.ServoUtil;
-import com.netflix.servo.monitor.BasicCounter;
-import com.netflix.servo.monitor.BasicTimer;
-import com.netflix.servo.monitor.Counter;
-import com.netflix.servo.monitor.MonitorConfig;
-import com.netflix.servo.monitor.Stopwatch;
-import com.netflix.servo.monitor.Timer;
+import com.netflix.servo.monitor.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 /**
+ * 监控指标收集 EurekaHttpClient ，配合 Netflix Servo 实现监控信息采集
+ *
  * @author Tomasz Bak
  */
 public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricsCollectingEurekaHttpClient.class);
 
+    /**
+     * http请求委托
+     * {@link com.netflix.discovery.shared.transport.jersey.JerseyApplicationClient}
+     */
     private final EurekaHttpClient delegate;
 
+    /**
+     * 请求类型和 请求计数等监控的map
+     */
     private final Map<RequestType, EurekaHttpClientRequestMetrics> metricsByRequestType;
+
+    /**
+     * 异常统计监控
+     */
     private final ExceptionsMetric exceptionsMetric;
+
+    /**
+     * 监控是否关闭
+     */
     private final boolean shutdownMetrics;
 
     public MetricsCollectingEurekaHttpClient(EurekaHttpClient delegate) {
-        this(delegate, initializeMetrics(), new ExceptionsMetric(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "exceptions"), true);
+        this(delegate, initializeMetrics(), new ExceptionsMetric(EurekaClientNames.METRIC_TRANSPORT_PREFIX +
+                "exceptions"), true);
     }
 
     private MetricsCollectingEurekaHttpClient(EurekaHttpClient delegate,
@@ -67,10 +80,13 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
 
     @Override
     protected <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor) {
+        // 获得 请求类型 的 请求指标
         EurekaHttpClientRequestMetrics requestMetrics = metricsByRequestType.get(requestExecutor.getRequestType());
         Stopwatch stopwatch = requestMetrics.latencyTimer.start();
         try {
+            // 执行请求
             EurekaHttpResponse<R> httpResponse = requestExecutor.execute(delegate);
+            // 根据请求结果计数
             requestMetrics.countersByStatus.get(mappedStatus(httpResponse)).increment();
             return httpResponse;
         } catch (Exception e) {
@@ -92,7 +108,8 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
 
     public static EurekaHttpClientFactory createFactory(final EurekaHttpClientFactory delegateFactory) {
         final Map<RequestType, EurekaHttpClientRequestMetrics> metricsByRequestType = initializeMetrics();
-        final ExceptionsMetric exceptionMetrics = new ExceptionsMetric(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "exceptions");
+        final ExceptionsMetric exceptionMetrics = new ExceptionsMetric(EurekaClientNames.METRIC_TRANSPORT_PREFIX +
+                "exceptions");
         return new EurekaHttpClientFactory() {
             @Override
             public EurekaHttpClient newClient() {
@@ -114,7 +131,8 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
 
     public static TransportClientFactory createFactory(final TransportClientFactory delegateFactory) {
         final Map<RequestType, EurekaHttpClientRequestMetrics> metricsByRequestType = initializeMetrics();
-        final ExceptionsMetric exceptionMetrics = new ExceptionsMetric(EurekaClientNames.METRIC_TRANSPORT_PREFIX + "exceptions");
+        final ExceptionsMetric exceptionMetrics = new ExceptionsMetric(EurekaClientNames.METRIC_TRANSPORT_PREFIX +
+                "exceptions");
         return new TransportClientFactory() {
             @Override
             public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
@@ -152,6 +170,10 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
         }
     }
 
+    /**
+     * 将http状态码除以100，1 2 3 4 5
+     * 返回相应的状态
+     */
     private static Status mappedStatus(EurekaHttpResponse<?> httpResponse) {
         int category = httpResponse.getStatusCode() / 100;
         switch (category) {
@@ -165,16 +187,28 @@ public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator
                 return Status.x400;
             case 5:
                 return Status.x500;
+            default:
+                return Status.Unknown;
         }
-        return Status.Unknown;
     }
 
     static class EurekaHttpClientRequestMetrics {
 
         enum Status {x100, x200, x300, x400, x500, Unknown}
 
+        /**
+         * 潜在的时间计时
+         */
         private final Timer latencyTimer;
+
+        /**
+         * 请求错误计数器
+         */
         private final Counter connectionErrors;
+
+        /**
+         * 各种状态码的计数器
+         */
         private final Map<Status, Counter> countersByStatus;
 
         EurekaHttpClientRequestMetrics(String resourceName) {

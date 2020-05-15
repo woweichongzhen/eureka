@@ -15,11 +15,13 @@
  */
 package com.netflix.appinfo;
 
-import java.util.Map;
-
 import com.google.inject.ImplementedBy;
 
+import java.util.Map;
+
 /**
+ * eureka 实例配置接口
+ * 实例向Eureka服务器注册所需的配置信息，比如消费者，提供者
  * Configuration information required by the instance to register with Eureka
  * server. Once registered, users can look up information from
  * {@link com.netflix.discovery.EurekaClient} based on virtual hostname (also called VIPAddress),
@@ -37,7 +39,6 @@ import com.google.inject.ImplementedBy;
  * </p>
  *
  * @author Karthik Ranganathan
- *
  */
 @ImplementedBy(CloudInstanceConfig.class)
 public interface EurekaInstanceConfig {
@@ -64,13 +65,15 @@ public interface EurekaInstanceConfig {
     String getAppGroupName();
 
     /**
+     * 应用初始化后是否开启使用，尽快可以使用
+     * <p>
      * Indicates whether the instance should be enabled for taking traffic as
      * soon as it is registered with eureka. Sometimes the application might
      * need to do some pre-processing before it is ready to take traffic.
-     *
+     * <p>
      * :( public API typos are the worst. I think this was meant to be "OnInit".
      *
-     * @return true to immediately start taking traffic, false otherwise.
+     * @return true to immediatel`y start taking traffic, false otherwise.
      */
     boolean isInstanceEnabledOnit();
 
@@ -95,7 +98,7 @@ public interface EurekaInstanceConfig {
      * traffic or not.
      *
      * @return true if the <code>non-secure</code> port is enabled, false
-     *         otherwise.
+     * otherwise.
      */
     boolean isNonSecurePortEnabled();
 
@@ -108,6 +111,11 @@ public interface EurekaInstanceConfig {
     boolean getSecurePortEnabled();
 
     /**
+     * 租约续约频率，单位：秒。
+     * 应用不断通过按照该频率发送心跳给 Eureka-Server 以达到续约的作用。
+     * 当 Eureka-Server 超过最大频率未收到续约（心跳），契约失效，进行应用移除。
+     * 应用移除后，其他应用无法从 Eureka-Server 获取该应用。
+     * <p>
      * Indicates how often (in seconds) the eureka client needs to send
      * heartbeats to eureka server to indicate that it is still alive. If the
      * heartbeats are not received for the period specified in
@@ -125,6 +133,8 @@ public interface EurekaInstanceConfig {
     int getLeaseRenewalIntervalInSeconds();
 
     /**
+     * 契约过期时间，单位：秒。
+     * <p>
      * Indicates the time in seconds that the eureka server waits since it
      * received the last heartbeat before it can remove this instance from its
      * view and there by disallowing traffic to this instance.
@@ -153,7 +163,7 @@ public interface EurekaInstanceConfig {
      * </p>
      *
      * @return the string indicating the virtual host name which the clients use
-     *         to call this service.
+     * to call this service.
      */
     String getVirtualHostName();
 
@@ -168,7 +178,7 @@ public interface EurekaInstanceConfig {
      * </p>
      *
      * @return the string indicating the secure virtual host name which the
-     *         clients use to call this service.
+     * clients use to call this service.
      */
     String getSecureVirtualHostName();
 
@@ -186,11 +196,10 @@ public interface EurekaInstanceConfig {
      * Gets the hostname associated with this instance. This is the exact name
      * that would be used by other instances to make calls.
      *
-     * @param refresh
-     *            true if the information needs to be refetched, false
-     *            otherwise.
+     * @param refresh true if the information needs to be refetched, false
+     *                otherwise.
      * @return hostname of this instance which is identifiable by other
-     *         instances for making remote calls.
+     * instances for making remote calls.
      */
     String getHostName(boolean refresh);
 
@@ -203,12 +212,14 @@ public interface EurekaInstanceConfig {
     Map<String, String> getMetadataMap();
 
     /**
+     * 数据中心信息
+     * <p>
      * Returns the data center this instance is deployed. This information is
      * used to get some AWS specific instance information if the instance is
      * deployed in AWS.
      *
      * @return information that indicates which data center this instance is
-     *         deployed in.
+     * deployed in.
      */
     DataCenterInfo getDataCenterInfo();
 
@@ -363,12 +374,16 @@ public interface EurekaInstanceConfig {
      * implementing DataCenterInfo types.
      *
      * @return an ordered list of fields that should be used to preferentially
-     *         resolve this instance's default address, empty String[] for default.
+     * resolve this instance's default address, empty String[] for default.
      */
     String[] getDefaultAddressResolutionOrder();
 
     /**
+     * 配置命名空间，默认使用 eureka
+     * eureka.name 配置
+     * <p>
      * Get the namespace used to find properties.
+     *
      * @return the namespace used to find properties.
      */
     String getNamespace();

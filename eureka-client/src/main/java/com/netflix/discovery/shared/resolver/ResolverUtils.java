@@ -16,14 +16,6 @@
 
 package com.netflix.discovery.shared.resolver;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
@@ -33,6 +25,10 @@ import com.netflix.discovery.shared.transport.EurekaTransportConfig;
 import com.netflix.discovery.util.SystemUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Tomasz Bak
@@ -49,8 +45,10 @@ public final class ResolverUtils {
     }
 
     /**
+     * 本区域放在前面，其他区域放在后面
+     *
      * @return returns two element array with first item containing list of endpoints from client's zone,
-     *         and in the second list all the remaining ones
+     * and in the second list all the remaining ones
      */
     public static List<AwsEndpoint>[] splitByZone(List<AwsEndpoint> eurekaEndpoints, String myZone) {
         if (eurekaEndpoints.isEmpty()) {
@@ -72,6 +70,12 @@ public final class ResolverUtils {
         return new List[]{myZoneList, remainingZonesList};
     }
 
+    /**
+     * 可用区域，获取 txt.${region}.xxx 中间的一段
+     *
+     * @param hostName 主机名
+     * @return 可用返回区域，否则返回null
+     */
     public static String extractZoneFromHostName(String hostName) {
         Matcher matcher = ZONE_RE.matcher(hostName);
         if (matcher.matches()) {
@@ -81,6 +85,7 @@ public final class ResolverUtils {
     }
 
     /**
+     * 随机打乱区域并合并
      * Randomize server list using local IPv4 address hash as a seed.
      *
      * @return a copy of the original list with elements in the random order
@@ -90,6 +95,11 @@ public final class ResolverUtils {
         if (randomList.size() < 2) {
             return randomList;
         }
+        // 以本地IP为随机种子，有如下好处：
+        // 多个主机，实现对同一个 EndPoint 集群负载均衡的效果。
+        // 单个主机，同一个 EndPoint 集群按照固定顺序访问。
+        // Eureka-Server 不是强一致性的注册中心，
+        // Eureka-Client 对同一个 Eureka-Server 拉取注册信息，保证两者之间增量同步的一致性。
         Random random = new Random(LOCAL_IPV4_ADDRESS.hashCode());
         int last = randomList.size() - 1;
         for (int i = 0; i < last; i++) {

@@ -17,13 +17,12 @@
 package com.netflix.eureka.registry;
 
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.shared.Application;
 import com.netflix.eureka.cluster.PeerEurekaNodes;
 import com.netflix.eureka.resources.ASGResource;
 
-import java.util.List;
-
 /**
+ * 应用实例信息注册表之间同步
+ *
  * @author Tomasz Bak
  */
 public interface PeerAwareInstanceRegistry extends InstanceRegistry {
@@ -31,6 +30,7 @@ public interface PeerAwareInstanceRegistry extends InstanceRegistry {
     void init(PeerEurekaNodes peerEurekaNodes) throws Exception;
 
     /**
+     * 从所有的其他服务端拉取注册信息
      * Populates the registry information from a peer eureka node. This
      * operation fails over to other nodes until the list is exhausted if the
      * communication fails.
@@ -38,6 +38,9 @@ public interface PeerAwareInstanceRegistry extends InstanceRegistry {
     int syncUp();
 
     /**
+     * 检查注册表是否允许访问
+     * 比如未从其他节点获取到信息的情况下，超过指定的时间不会允许访问
+     * <p>
      * Checks to see if the registry access is allowed or the server is in a
      * situation where it does not all getting registry information. The server
      * does not return registry information for a period specified in
@@ -45,11 +48,14 @@ public interface PeerAwareInstanceRegistry extends InstanceRegistry {
      * get the registry information from the peer eureka nodes at start up.
      *
      * @return false - if the instances count from a replica transfer returned
-     *         zero and if the wait time has not elapsed, otherwise returns true
+     * zero and if the wait time has not elapsed, otherwise returns true
      */
-     boolean shouldAllowAccess(boolean remoteRegionRequired);
+    boolean shouldAllowAccess(boolean remoteRegionRequired);
 
-     void register(InstanceInfo info, boolean isReplication);
+    /**
+     * 向注册表中添加注册信息
+     */
+    void register(InstanceInfo info, boolean isReplication);
 
-     void statusUpdate(final String asgName, final ASGResource.ASGStatus newStatus, final boolean isReplication);
+    void statusUpdate(final String asgName, final ASGResource.ASGStatus newStatus, final boolean isReplication);
 }

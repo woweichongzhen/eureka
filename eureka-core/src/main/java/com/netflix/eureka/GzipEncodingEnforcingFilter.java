@@ -1,12 +1,7 @@
 package com.netflix.eureka;
 
 import javax.inject.Singleton;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
@@ -17,6 +12,8 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * gzip压缩编码过滤器
+ * <p>
  * Originally Eureka supported non-compressed responses only. For large registries it was extremely
  * inefficient, so gzip encoding was added. As nowadays all modern HTTP clients support gzip HTTP response
  * transparently, there is no longer need to maintain uncompressed content. By adding this filter, Eureka
@@ -32,7 +29,8 @@ public class GzipEncodingEnforcingFilter implements Filter {
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException,
+            ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         if ("GET".equals(httpRequest.getMethod())) {
             String acceptEncoding = httpRequest.getHeader(HttpHeaders.ACCEPT_ENCODING);

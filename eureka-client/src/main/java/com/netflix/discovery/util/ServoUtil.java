@@ -16,12 +16,12 @@
 
 package com.netflix.discovery.util;
 
-import java.util.Collection;
-
 import com.netflix.servo.DefaultMonitorRegistry;
 import com.netflix.servo.monitor.Monitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
 
 /**
  * @author Tomasz Bak
@@ -46,6 +46,9 @@ public final class ServoUtil {
         return true;
     }
 
+    /**
+     * 取消注册一个监控
+     */
     public static <T> void unregister(Monitor<T> monitor) {
         if (monitor != null) {
             try {
@@ -61,6 +64,9 @@ public final class ServoUtil {
         }
     }
 
+    /**
+     * 取消注册监控
+     */
     public static <M extends Monitor> void unregister(Collection<M> monitors) {
         for (M monitor : monitors) {
             unregister(monitor);

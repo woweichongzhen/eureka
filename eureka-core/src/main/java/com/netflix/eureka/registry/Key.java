@@ -6,38 +6,95 @@ import com.netflix.eureka.Version;
 import javax.annotation.Nullable;
 import java.util.Arrays;
 
+/**
+ * 缓存key
+ */
 public class Key {
 
+    /**
+     * key类型
+     */
     public enum KeyType {
-        JSON, XML
+        /**
+         * json
+         */
+        JSON,
+
+        /**
+         * xml
+         */
+        XML
     }
 
     /**
+     * 为此键定义存储在此缓存中的实体
      * An enum to define the entity that is stored in this cache for this key.
      */
     public enum EntityType {
-        Application, VIP, SVIP
+        /**
+         * app信息
+         */
+        Application,
+
+        /**
+         * vip
+         */
+        VIP,
+
+        /**
+         * svip
+         */
+        SVIP
     }
 
+    /**
+     * 实体名
+     */
     private final String entityName;
+
+    /**
+     * 远端区域列表
+     */
     private final String[] regions;
+
+    /**
+     * 请求参数类型
+     */
     private final KeyType requestType;
+
+    /**
+     * 请求 API 版本号
+     */
     private final Version requestVersion;
+
+    /**
+     * hashKey
+     */
     private final String hashKey;
+
+    /**
+     * 实体类型
+     */
     private final EntityType entityType;
+
+    /**
+     * 接收的类型
+     */
     private final EurekaAccept eurekaAccept;
 
     public Key(EntityType entityType, String entityName, KeyType type, Version v, EurekaAccept eurekaAccept) {
         this(entityType, entityName, type, v, eurekaAccept, null);
     }
 
-    public Key(EntityType entityType, String entityName, KeyType type, Version v, EurekaAccept eurekaAccept, @Nullable String[] regions) {
+    public Key(EntityType entityType, String entityName, KeyType type, Version v, EurekaAccept eurekaAccept,
+               @Nullable String[] regions) {
         this.regions = regions;
         this.entityType = entityType;
         this.entityName = entityName;
         this.requestType = type;
         this.requestVersion = v;
         this.eurekaAccept = eurekaAccept;
+        // 生成hash
         hashKey = this.entityType + this.entityName + (null != this.regions ? Arrays.toString(this.regions) : "")
                 + requestType.name() + requestVersion.name() + this.eurekaAccept.name();
     }
@@ -96,7 +153,7 @@ public class Key {
     public String toStringCompact() {
         StringBuilder sb = new StringBuilder();
         sb.append("{name=").append(entityName).append(", type=").append(entityType).append(", format=").append(requestType);
-        if(regions != null) {
+        if (regions != null) {
             sb.append(", regions=").append(Arrays.toString(regions));
         }
         sb.append('}');

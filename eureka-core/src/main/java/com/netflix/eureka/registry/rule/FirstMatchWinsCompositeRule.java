@@ -7,9 +7,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 采用规则的有序列表，返回第一个匹配的规则
+ * <p>
  * This rule takes an ordered list of rules and returns the result of the first match or the
  * result of the {@link AlwaysMatchInstanceStatusRule}.
- *
+ * <p>
  * Created by Nikos Michalakis on 7/13/16.
  */
 public class FirstMatchWinsCompositeRule implements InstanceStatusOverrideRule {
@@ -20,9 +22,10 @@ public class FirstMatchWinsCompositeRule implements InstanceStatusOverrideRule {
 
     public FirstMatchWinsCompositeRule(InstanceStatusOverrideRule... rules) {
         this.rules = rules;
+        // 总是匹配实例状态规则
         this.defaultRule = new AlwaysMatchInstanceStatusRule();
         // Let's build up and "cache" the rule name to be used by toString();
-        List<String> ruleNames = new ArrayList<>(rules.length+1);
+        List<String> ruleNames = new ArrayList<>(rules.length + 1);
         for (int i = 0; i < rules.length; ++i) {
             ruleNames.add(rules[i].toString());
         }
@@ -35,11 +38,13 @@ public class FirstMatchWinsCompositeRule implements InstanceStatusOverrideRule {
                                       Lease<InstanceInfo> existingLease,
                                       boolean isReplication) {
         for (int i = 0; i < this.rules.length; ++i) {
+            // 按顺序诸葛应用规则，匹配返回状态重写结果
             StatusOverrideResult result = this.rules[i].apply(instanceInfo, existingLease, isReplication);
             if (result.matches()) {
                 return result;
             }
         }
+        // 都未匹配成功使用默认的
         return defaultRule.apply(instanceInfo, existingLease, isReplication);
     }
 

@@ -1,13 +1,30 @@
 package com.netflix.eureka.util.batcher;
 
 /**
+ * 任务持有者
+ *
  * @author Tomasz Bak
  */
 class TaskHolder<ID, T> {
 
+    /**
+     * 任务id
+     */
     private final ID id;
+
+    /**
+     * 任务id
+     */
     private final T task;
+
+    /**
+     * 过期时间
+     */
     private final long expiryTime;
+
+    /**
+     * 提交时间戳
+     */
     private final long submitTimestamp;
 
     TaskHolder(ID id, T task, long expiryTime) {

@@ -16,19 +16,6 @@
 
 package com.netflix.discovery.shared;
 
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -43,18 +30,22 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 
+import javax.annotation.Nullable;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
+
 /**
  * The application class holds the list of instances for a particular
  * application.
  *
  * @author Karthik Ranganathan
- *
  */
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("application")
 @JsonRootName("application")
 public class Application {
-    
+
     private static Random shuffleRandom = new Random();
 
     @Override
@@ -66,6 +57,9 @@ public class Application {
 
     private String name;
 
+    /**
+     * 数据有过改动
+     */
     @XStreamOmitField
     private volatile boolean isDirty = false;
 
@@ -74,6 +68,9 @@ public class Application {
 
     private final AtomicReference<List<InstanceInfo>> shuffledInstances;
 
+    /**
+     * 实例集合
+     */
     private final Map<String, InstanceInfo> instancesMap;
 
     public Application() {
@@ -100,8 +97,7 @@ public class Application {
     /**
      * Add the given instance info the list.
      *
-     * @param i
-     *            the instance info object to be added.
+     * @param i the instance info object to be added.
      */
     public void addInstance(InstanceInfo i) {
         instancesMap.put(i.getId(), i);
@@ -115,8 +111,7 @@ public class Application {
     /**
      * Remove the given instance info the list.
      *
-     * @param i
-     *            the instance info object to be removed.
+     * @param i the instance info object to be removed.
      */
     public void removeInstance(InstanceInfo i) {
         removeInstance(i, true);
@@ -143,12 +138,12 @@ public class Application {
      * application.
      *
      * @return list of non-shuffled and non-filtered instances associated with this particular
-     *         application.
+     * application.
      */
     @JsonIgnore
     public List<InstanceInfo> getInstancesAsIsFromEureka() {
         synchronized (instances) {
-           return new ArrayList<InstanceInfo>(this.instances);
+            return new ArrayList<InstanceInfo>(this.instances);
         }
     }
 
@@ -156,8 +151,7 @@ public class Application {
     /**
      * Get the instance info that matches the given id.
      *
-     * @param id
-     *            the id for which the instance info needs to be returned.
+     * @param id the id for which the instance info needs to be returned.
      * @return the instance info object.
      */
     public InstanceInfo getByInstanceId(String id) {
@@ -176,8 +170,7 @@ public class Application {
     /**
      * Sets the name of the application.
      *
-     * @param name
-     *            the name of the application.
+     * @param name the name of the application.
      */
     public void setName(String name) {
         this.name = StringCache.intern(name);
@@ -194,9 +187,8 @@ public class Application {
      * Shuffles the list of instances in the application and stores it for
      * future retrievals.
      *
-     * @param filterUpInstances
-     *            indicates whether only the instances with status
-     *            {@link InstanceStatus#UP} needs to be stored.
+     * @param filterUpInstances indicates whether only the instances with status
+     *                          {@link InstanceStatus#UP} needs to be stored.
      */
     public void shuffleAndStoreInstances(boolean filterUpInstances) {
         _shuffleAndStoreInstances(filterUpInstances, false, null, null, null);

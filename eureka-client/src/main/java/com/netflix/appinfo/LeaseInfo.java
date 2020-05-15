@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonRootName;
 import com.thoughtworks.xstream.annotations.XStreamOmitField;
 
 /**
+ * eureka续约信息
  * Represents the <em>lease</em> information with <em>Eureka</em>.
  *
  * <p>
@@ -32,7 +33,6 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
  * </p>
  *
  * @author Karthik Ranganathan, Greg Kim
- *
  */
 @JsonRootName("leaseInfo")
 public class LeaseInfo {
@@ -41,13 +41,35 @@ public class LeaseInfo {
     public static final int DEFAULT_LEASE_DURATION = 90;
 
     // Client settings
+    /**
+     * 续约周期
+     */
     private int renewalIntervalInSecs = DEFAULT_LEASE_RENEWAL_INTERVAL;
+
+    /**
+     * 客户端指定的时间，发现不续约后等待的时间
+     */
     private int durationInSecs = DEFAULT_LEASE_DURATION;
 
     // Server populated
+    /**
+     * 注册时间戳
+     */
     private long registrationTimestamp;
+
+    /**
+     * 上次续约时间戳
+     */
     private long lastRenewalTimestamp;
+
+    /**
+     * 剔除时间戳
+     */
     private long evictionTimestamp;
+
+    /**
+     * 服务上线时间戳
+     */
     private long serviceUpTimestamp;
 
     public static final class Builder {
@@ -66,8 +88,7 @@ public class LeaseInfo {
         /**
          * Sets the registration timestamp.
          *
-         * @param ts
-         *            time when the lease was first registered.
+         * @param ts time when the lease was first registered.
          * @return the {@link LeaseInfo} builder.
          */
         public Builder setRegistrationTimestamp(long ts) {
@@ -78,8 +99,7 @@ public class LeaseInfo {
         /**
          * Sets the last renewal timestamp of lease.
          *
-         * @param ts
-         *            time when the lease was last renewed.
+         * @param ts time when the lease was last renewed.
          * @return the {@link LeaseInfo} builder.
          */
         public Builder setRenewalTimestamp(long ts) {
@@ -90,8 +110,7 @@ public class LeaseInfo {
         /**
          * Sets the de-registration timestamp.
          *
-         * @param ts
-         *            time when the lease was removed.
+         * @param ts time when the lease was removed.
          * @return the {@link LeaseInfo} builder.
          */
         public Builder setEvictionTimestamp(long ts) {
@@ -102,8 +121,7 @@ public class LeaseInfo {
         /**
          * Sets the service UP timestamp.
          *
-         * @param ts
-         *            time when the leased service marked as UP.
+         * @param ts time when the leased service marked as UP.
          * @return the {@link LeaseInfo} builder.
          */
         public Builder setServiceUpTimestamp(long ts) {
@@ -115,9 +133,8 @@ public class LeaseInfo {
          * Sets the client specified setting for eviction (e.g. how long to wait
          * without renewal event).
          *
-         * @param d
-         *            time in seconds after which the lease would expire without
-         *            renewa.
+         * @param d time in seconds after which the lease would expire without
+         *          renewa.
          * @return the {@link LeaseInfo} builder.
          */
         public Builder setDurationInSecs(int d) {
@@ -132,8 +149,7 @@ public class LeaseInfo {
         /**
          * Sets the client specified setting for renew interval.
          *
-         * @param i
-         *            the time interval with which the renewals will be renewed.
+         * @param i the time interval with which the renewals will be renewed.
          * @return the {@link LeaseInfo} builder.
          */
         public Builder setRenewalIntervalInSecs(int i) {
@@ -149,7 +165,7 @@ public class LeaseInfo {
          * Build the {@link InstanceInfo}.
          *
          * @return the {@link LeaseInfo} information built based on the supplied
-         *         information.
+         * information.
          */
         public LeaseInfo build() {
             return result;

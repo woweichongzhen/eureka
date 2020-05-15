@@ -19,10 +19,15 @@ package com.netflix.discovery.shared.transport.decorator;
 import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.RequestType;
 
 /**
+ * 服务器状态评估
+ *
  * @author Tomasz Bak
  */
 public final class ServerStatusEvaluators {
 
+    /**
+     * 遗留的评估
+     */
     private static final ServerStatusEvaluator LEGACY_EVALUATOR = new ServerStatusEvaluator() {
         @Override
         public boolean accept(int statusCode, RequestType requestType) {
@@ -41,6 +46,9 @@ public final class ServerStatusEvaluators {
         }
     };
 
+    /**
+     * 成功的请求
+     */
     private static final ServerStatusEvaluator HTTP_SUCCESS_EVALUATOR = new ServerStatusEvaluator() {
         @Override
         public boolean accept(int statusCode, RequestType requestType) {

@@ -25,6 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 请求响应对象
+ *
  * @author Tomasz Bak
  */
 public class EurekaHttpResponse<T> {
@@ -50,7 +52,8 @@ public class EurekaHttpResponse<T> {
             try {
                 this.location = locationValue == null ? null : new URI(locationValue);
             } catch (URISyntaxException e) {
-                throw new TransportException("Invalid Location header value in response; cannot complete the request (location="
+                throw new TransportException("Invalid Location header value in response; cannot complete the request " +
+                        "(location="
                         + locationValue + ')', e);
             }
         } else {

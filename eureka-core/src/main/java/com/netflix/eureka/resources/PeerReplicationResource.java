@@ -16,16 +16,9 @@
 
 package com.netflix.eureka.resources;
 
-import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-
 import com.netflix.appinfo.InstanceInfo;
-import com.netflix.eureka.EurekaServerContext;
 import com.netflix.eureka.EurekaServerConfig;
+import com.netflix.eureka.EurekaServerContext;
 import com.netflix.eureka.EurekaServerContextHolder;
 import com.netflix.eureka.cluster.protocol.ReplicationInstance;
 import com.netflix.eureka.cluster.protocol.ReplicationInstanceResponse;
@@ -36,11 +29,19 @@ import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+
 /**
+ * 接收其他节点的同步请求
+ * <p>
  * A <em>jersey</em> resource that handles requests for replication purposes.
  *
  * @author Karthik Ranganathan
- *
  */
 @Path("/{version}/peerreplication")
 @Produces({"application/xml", "application/json"})
@@ -64,15 +65,16 @@ public class PeerReplicationResource {
     }
 
     /**
+     * 处理来自对等eureka节点的批量复制事件
+     * <p>
      * Process batched replication events from peer eureka nodes.
      *
      * <p>
-     *  The batched events are delegated to underlying resources to generate a
-     *  {@link ReplicationListResponse} containing the individual responses to the batched events
+     * The batched events are delegated to underlying resources to generate a
+     * {@link ReplicationListResponse} containing the individual responses to the batched events
      * </p>
      *
-     * @param replicationList
-     *            The List of replication events from peer eureka nodes
+     * @param replicationList The List of replication events from peer eureka nodes
      * @return A batched response containing the information about the responses of individual events
      */
     @Path("batch")
@@ -80,6 +82,7 @@ public class PeerReplicationResource {
     public Response batchReplication(ReplicationList replicationList) {
         try {
             ReplicationListResponse batchResponse = new ReplicationListResponse();
+            // 逐个同步操作任务处理，并将处理结果( ReplicationInstanceResponse ) 合并到 ReplicationListResponse
             for (ReplicationInstance instanceInfo : replicationList.getReplicationList()) {
                 try {
                     batchResponse.addResponse(dispatch(instanceInfo));
@@ -96,8 +99,16 @@ public class PeerReplicationResource {
         }
     }
 
+    /**
+     * 调度处理同步实例信息
+     *
+     * @param instanceInfo 同步的实例信息
+     * @return 同步实例返回
+     */
     private ReplicationInstanceResponse dispatch(ReplicationInstance instanceInfo) {
+        // 创建应用资源
         ApplicationResource applicationResource = createApplicationResource(instanceInfo);
+        // 创建实例资源
         InstanceResource resource = createInstanceResource(instanceInfo, applicationResource);
 
         String lastDirtyTimestamp = toString(instanceInfo.getLastDirtyTimestamp());
@@ -105,12 +116,14 @@ public class PeerReplicationResource {
         String instanceStatus = toString(instanceInfo.getStatus());
 
         Builder singleResponseBuilder = new Builder();
+        // 把任务提交给类似于controller之类的方法调用
         switch (instanceInfo.getAction()) {
             case Register:
                 singleResponseBuilder = handleRegister(instanceInfo, applicationResource);
                 break;
             case Heartbeat:
-                singleResponseBuilder = handleHeartbeat(serverConfig, resource, lastDirtyTimestamp, overriddenStatus, instanceStatus);
+                singleResponseBuilder = handleHeartbeat(serverConfig, resource, lastDirtyTimestamp, overriddenStatus,
+                        instanceStatus);
                 break;
             case Cancel:
                 singleResponseBuilder = handleCancel(resource);
@@ -120,6 +133,8 @@ public class PeerReplicationResource {
                 break;
             case DeleteStatusOverride:
                 singleResponseBuilder = handleDeleteStatusOverride(instanceInfo, resource);
+                break;
+            default:
                 break;
         }
         return singleResponseBuilder.build();
@@ -144,7 +159,8 @@ public class PeerReplicationResource {
         return new Builder().setStatusCode(response.getStatus());
     }
 
-    private static Builder handleHeartbeat(EurekaServerConfig config, InstanceResource resource, String lastDirtyTimestamp, String overriddenStatus, String instanceStatus) {
+    private static Builder handleHeartbeat(EurekaServerConfig config, InstanceResource resource,
+                                           String lastDirtyTimestamp, String overriddenStatus, String instanceStatus) {
         Response response = resource.renewLease(REPLICATION, overriddenStatus, instanceStatus, lastDirtyTimestamp);
         int responseStatus = response.getStatus();
         Builder responseBuilder = new Builder().setStatusCode(responseStatus);
@@ -163,7 +179,8 @@ public class PeerReplicationResource {
     }
 
     private static Builder handleStatusUpdate(ReplicationInstance instanceInfo, InstanceResource resource) {
-        Response response = resource.statusUpdate(instanceInfo.getStatus(), REPLICATION, toString(instanceInfo.getLastDirtyTimestamp()));
+        Response response = resource.statusUpdate(instanceInfo.getStatus(), REPLICATION,
+                toString(instanceInfo.getLastDirtyTimestamp()));
         return new Builder().setStatusCode(response.getStatus());
     }
 

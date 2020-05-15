@@ -15,23 +15,6 @@
  */
 package com.netflix.eureka.registry;
 
-import javax.inject.Inject;
-import javax.ws.rs.core.MediaType;
-import java.net.InetAddress;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.ActionType;
@@ -59,17 +42,29 @@ import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
+import javax.ws.rs.core.MediaType;
+import java.net.InetAddress;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
  * Handles all registry operations that needs to be done on a eureka service running in an other region.
- *
+ * <p>
  * The primary operations include fetching registry information from remote region and fetching delta information
  * on a periodic basis.
- *
+ * <p>
  * TODO: a lot of the networking code in this class can be replaced by newer code in
  * {@link com.netflix.discovery.DiscoveryClient}
  *
  * @author Karthik Ranganathan
- *
  */
 public class RemoteRegionRegistry implements LookupService<String> {
     private static final Logger logger = LoggerFactory.getLogger(RemoteRegionRegistry.class);
@@ -85,8 +80,13 @@ public class RemoteRegionRegistry implements LookupService<String> {
     private final Lock fetchRegistryUpdateLock = new ReentrantLock();
 
     private final AtomicReference<Applications> applications = new AtomicReference<Applications>(new Applications());
-    private final AtomicReference<Applications> applicationsDelta = new AtomicReference<Applications>(new Applications());
+    private final AtomicReference<Applications> applicationsDelta =
+            new AtomicReference<Applications>(new Applications());
     private final EurekaServerConfig serverConfig;
+
+    /**
+     * 是否准备好提供数据
+     */
     private volatile boolean readyForServingData;
     private final EurekaHttpClient eurekaHttpClient;
 
@@ -181,7 +181,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
         };
 
         ThreadPoolExecutor remoteRegionFetchExecutor = new ThreadPoolExecutor(
-                1, serverConfig.getRemoteRegionFetchThreadPoolSize(), 0, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());  // use direct handoff
+                1, serverConfig.getRemoteRegionFetchThreadPoolSize(), 0, TimeUnit.SECONDS,
+                new SynchronousQueue<Runnable>());  // use direct handoff
 
         scheduler = Executors.newScheduledThreadPool(1,
                 new ThreadFactoryBuilder()
@@ -203,7 +204,9 @@ public class RemoteRegionRegistry implements LookupService<String> {
     }
 
     /**
+     * 是否准备好提供数据
      * Check if this registry is ready for serving data.
+     *
      * @return true if ready, false otherwise.
      */
     public boolean isReadyForServingData() {
@@ -212,6 +215,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
     /**
      * Fetch the registry information from the remote region.
+     *
      * @return true, if the fetch was successful, false otherwise.
      */
     private boolean fetchRegistry() {
@@ -225,7 +229,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
                     || (getApplications().getRegisteredApplications().size() == 0)) {
                 logger.info("Disable delta property : {}", serverConfig.shouldDisableDeltaForRemoteRegions());
                 logger.info("Application is null : {}", getApplications() == null);
-                logger.info("Registered Applications size is zero : {}", getApplications().getRegisteredApplications().isEmpty());
+                logger.info("Registered Applications size is zero : {}",
+                        getApplications().getRegisteredApplications().isEmpty());
                 success = storeFullRegistry();
             } else {
                 success = fetchAndStoreDelta();
@@ -285,9 +290,8 @@ public class RemoteRegionRegistry implements LookupService<String> {
      * Updates the delta information fetches from the eureka server into the
      * local cache.
      *
-     * @param delta
-     *            the delta information received from eureka server in the last
-     *            poll cycle.
+     * @param delta the delta information received from eureka server in the last
+     *              poll cycle.
      */
     private void updateDelta(Applications delta) {
         int deltaCount = 0;
@@ -338,8 +342,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
     /**
      * Close HTTP response object and its respective resources.
      *
-     * @param response
-     *            the HttpResponse object.
+     * @param response the HttpResponse object.
      */
     private void closeResponse(ClientResponse response) {
         if (response != null) {
@@ -375,15 +378,18 @@ public class RemoteRegionRegistry implements LookupService<String> {
 
     /**
      * Fetch registry information from the remote region.
+     *
      * @param delta - true, if the fetch needs to get deltas, false otherwise
      * @return - response which has information about the data.
      */
     private Applications fetchRemoteRegistry(boolean delta) {
-        logger.info("Getting instance registry info from the eureka server : {} , delta : {}", this.remoteRegionURL, delta);
+        logger.info("Getting instance registry info from the eureka server : {} , delta : {}", this.remoteRegionURL,
+                delta);
 
         if (shouldUseExperimentalTransport()) {
             try {
-                EurekaHttpResponse<Applications> httpResponse = delta ? eurekaHttpClient.getDelta() : eurekaHttpClient.getApplications();
+                EurekaHttpResponse<Applications> httpResponse = delta ? eurekaHttpClient.getDelta() :
+                        eurekaHttpClient.getApplications();
                 int httpStatus = httpResponse.getStatusCode();
                 if (httpStatus >= 200 && httpStatus < 300) {
                     logger.debug("Got the data successfully : {}", httpStatus);
@@ -419,7 +425,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
     /**
      * Reconciles the delta information fetched to see if the hashcodes match.
      *
-     * @param delta - the delta information fetched previously for reconciliation.
+     * @param delta             - the delta information fetched previously for reconciliation.
      * @param reconcileHashCode - the hashcode for comparison.
      * @return - response
      * @throws Throwable
@@ -443,7 +449,7 @@ public class RemoteRegionRegistry implements LookupService<String> {
                     getApplications().getReconcileHashCode(),
                     delta.getAppsHashCode());
             return true;
-        }else {
+        } else {
             logger.warn("Not setting the applications map as another thread has advanced the update generation");
             return true;  // still return true
         }

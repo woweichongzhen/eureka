@@ -17,6 +17,7 @@
 package com.netflix.eureka;
 
 /**
+ * eureka 服务上下文持有
  * A static holder for the server context for use in non-DI cases.
  *
  * @author David Liu

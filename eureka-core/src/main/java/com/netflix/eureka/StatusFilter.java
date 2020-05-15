@@ -31,6 +31,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 
 /**
+ * 状态过滤器，当未开启时，返回307状态码重定向
  * Filter to check whether the eureka server is ready to take requests based on
  * its {@link InstanceStatus}.
  */

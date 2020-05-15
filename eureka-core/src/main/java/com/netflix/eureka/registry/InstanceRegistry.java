@@ -13,13 +13,22 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 应用实例注册表接口。提供应用实例的注册与发现服务
+ *
  * @author Tomasz Bak
  */
 public interface InstanceRegistry extends LeaseManager<InstanceInfo>, LookupService<String> {
 
+    /*开关*/
+
     void openForTraffic(ApplicationInfoManager applicationInfoManager, int count);
 
     void shutdown();
+
+    void clearRegistry();
+
+
+    /*应用实例状态变更*/
 
     @Deprecated
     void storeOverriddenStatusIfRequired(String id, InstanceStatus overriddenStatus);
@@ -34,6 +43,14 @@ public interface InstanceRegistry extends LeaseManager<InstanceInfo>, LookupServ
 
     Map<String, InstanceStatus> overriddenInstanceStatusesSnapshot();
 
+
+    /*响应缓存相关*/
+
+    void initializedResponseCache();
+
+    ResponseCache getResponseCache();
+
+
     Applications getApplicationsFromLocalRegionOnly();
 
     List<Application> getSortedApplications();
@@ -41,7 +58,7 @@ public interface InstanceRegistry extends LeaseManager<InstanceInfo>, LookupServ
     /**
      * Get application information.
      *
-     * @param appName The name of the application
+     * @param appName             The name of the application
      * @param includeRemoteRegion true, if we need to include applications from remote regions
      *                            as indicated by the region {@link java.net.URL} by this property
      *                            {@link com.netflix.eureka.EurekaServerConfig#getRemoteRegionUrls()}, false otherwise
@@ -53,7 +70,7 @@ public interface InstanceRegistry extends LeaseManager<InstanceInfo>, LookupServ
      * Gets the {@link InstanceInfo} information.
      *
      * @param appName the application name for which the information is requested.
-     * @param id the unique identifier of the instance.
+     * @param id      the unique identifier of the instance.
      * @return the information about the instance.
      */
     InstanceInfo getInstanceByAppAndId(String appName, String id);
@@ -61,8 +78,8 @@ public interface InstanceRegistry extends LeaseManager<InstanceInfo>, LookupServ
     /**
      * Gets the {@link InstanceInfo} information.
      *
-     * @param appName the application name for which the information is requested.
-     * @param id the unique identifier of the instance.
+     * @param appName              the application name for which the information is requested.
+     * @param id                   the unique identifier of the instance.
      * @param includeRemoteRegions true, if we need to include applications from remote regions
      *                             as indicated by the region {@link java.net.URL} by this property
      *                             {@link com.netflix.eureka.EurekaServerConfig#getRemoteRegionUrls()}, false otherwise
@@ -70,11 +87,9 @@ public interface InstanceRegistry extends LeaseManager<InstanceInfo>, LookupServ
      */
     InstanceInfo getInstanceByAppAndId(String appName, String id, boolean includeRemoteRegions);
 
-    void clearRegistry();
 
-    void initializedResponseCache();
 
-    ResponseCache getResponseCache();
+    /*自我保护模式相关*/
 
     long getNumOfRenewsInLastMin();
 
@@ -82,16 +97,23 @@ public interface InstanceRegistry extends LeaseManager<InstanceInfo>, LookupServ
 
     int isBelowRenewThresold();
 
-    List<Pair<Long, String>> getLastNRegisteredInstances();
-
-    List<Pair<Long, String>> getLastNCanceledInstances();
-
     /**
+     * 续约过期是否启用
+     * <p>
      * Checks whether lease expiration is enabled.
+     *
      * @return true if enabled
      */
     boolean isLeaseExpirationEnabled();
 
     boolean isSelfPreservationModeEnabled();
+
+
+    /*调试/监控相关*/
+
+    List<Pair<Long, String>> getLastNRegisteredInstances();
+
+    List<Pair<Long, String>> getLastNCanceledInstances();
+
 
 }

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * 自己的数据中心
+ *
  * @author Tomasz Bak
  */
 public class MyDataCenterInfo implements DataCenterInfo {

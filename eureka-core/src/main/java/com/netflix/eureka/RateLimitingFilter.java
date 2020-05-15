@@ -16,14 +16,16 @@
 
 package com.netflix.eureka;
 
+import com.netflix.appinfo.AbstractEurekaIdentity;
+import com.netflix.appinfo.EurekaClientIdentity;
+import com.netflix.discovery.util.RateLimiter;
+import com.netflix.eureka.util.EurekaMonitors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -34,14 +36,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.netflix.appinfo.AbstractEurekaIdentity;
-import com.netflix.appinfo.EurekaClientIdentity;
-import com.netflix.eureka.util.EurekaMonitors;
-import com.netflix.discovery.util.RateLimiter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
+ * 请求限流过滤器
+ * <p>
  * Rate limiting filter, with configurable threshold above which non-privileged clients
  * will be dropped. This feature enables cutting off non-standard and potentially harmful clients
  * in case of system overload. Since it is critical to always allow client registrations and heartbeats into
@@ -128,17 +125,21 @@ public class RateLimitingFilter implements Filter {
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException,
+            ServletException {
         Target target = getTarget(request);
+
+        // Other Target ，不做限流
         if (target == Target.Other) {
             chain.doFilter(request, response);
             return;
         }
 
         HttpServletRequest httpRequest = (HttpServletRequest) request;
-
+        // 判断是否被限流
         if (isRateLimited(httpRequest, target)) {
             incrementStats(target);
+            // 如果开启限流，返回 503 状态码
             if (serverConfig.isRateLimiterEnabled()) {
                 ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 return;
@@ -147,6 +148,9 @@ public class RateLimitingFilter implements Filter {
         chain.doFilter(request, response);
     }
 
+    /**
+     * 获取请求目标
+     */
     private static Target getTarget(ServletRequest request) {
         Target target = Target.Other;
         if (request instanceof HttpServletRequest) {
@@ -154,6 +158,7 @@ public class RateLimitingFilter implements Filter {
             String pathInfo = httpRequest.getRequestURI();
 
             if ("GET".equals(httpRequest.getMethod()) && pathInfo != null) {
+                // get请求只限流 /apps ，不限流集群同步请求
                 Matcher matcher = TARGET_RE.matcher(pathInfo);
                 if (matcher.matches()) {
                     if (matcher.groupCount() == 0 || matcher.group(1) == null || "/".equals(matcher.group(1))) {
@@ -172,11 +177,20 @@ public class RateLimitingFilter implements Filter {
         return target;
     }
 
+    /**
+     * 判断是否被限流
+     *
+     * @param request http请求
+     * @param target  请求目标
+     * @return 是否限流
+     */
     private boolean isRateLimited(HttpServletRequest request, Target target) {
+        // // 判断是否特权应用
         if (isPrivileged(request)) {
             logger.debug("Privileged {} request", target);
             return false;
         }
+        // 判断是否被超载( 限流 )
         if (isOverloaded(target)) {
             logger.debug("Overloaded {} request; discarding it", target);
             return true;
@@ -185,22 +199,32 @@ public class RateLimitingFilter implements Filter {
         return false;
     }
 
+    /**
+     * 判断是否特权应用
+     */
     private boolean isPrivileged(HttpServletRequest request) {
         if (serverConfig.isRateLimiterThrottleStandardClients()) {
             return false;
         }
+        // 特权应用无需限流
+        // 以请求头( "DiscoveryIdentity-Name" ) 判断是否在标准客户端名集合内
         Set<String> privilegedClients = serverConfig.getRateLimiterPrivilegedClients();
         String clientName = request.getHeader(AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY);
         return privilegedClients.contains(clientName) || DEFAULT_PRIVILEGED_CLIENTS.contains(clientName);
     }
 
+    /**
+     * 判断是否被超载
+     */
     private boolean isOverloaded(Target target) {
         int maxInWindow = serverConfig.getRateLimiterBurstSize();
         int fetchWindowSize = serverConfig.getRateLimiterRegistryFetchAverageRate();
+        // 注册请求限流器
         boolean overloaded = !registryFetchRateLimiter.acquire(maxInWindow, fetchWindowSize);
 
         if (target == Target.FullFetch) {
             int fullFetchWindowSize = serverConfig.getRateLimiterFullFetchAverageRate();
+            // 全量拉取请求限流器
             overloaded |= !registryFullFetchRateLimiter.acquire(maxInWindow, fullFetchWindowSize);
         }
         return overloaded;

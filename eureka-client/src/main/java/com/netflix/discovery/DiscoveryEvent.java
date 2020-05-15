@@ -1,21 +1,22 @@
 /**
- * 
+ *
  */
 package com.netflix.discovery;
 
 /**
+ * 服务发现事件
  * Class to be extended by all discovery events. Abstract as it
  * doesn't make sense for generic events to be published directly.
  */
 public abstract class DiscoveryEvent implements EurekaEvent {
-    
+
     // System time when the event happened
     private final long timestamp;
-    
+
     protected DiscoveryEvent() {
         this.timestamp = System.currentTimeMillis();
     }
-    
+
     /**
      * @return Return the system time in milliseconds when the event happened.
      */

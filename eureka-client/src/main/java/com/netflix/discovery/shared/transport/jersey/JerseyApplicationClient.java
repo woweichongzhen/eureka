@@ -23,6 +23,7 @@ import com.sun.jersey.api.client.WebResource.Builder;
 import java.util.Map;
 
 /**
+ * 实现 Eureka-Client 请求 Eureka-Server 的网络通信
  * A version of Jersey1 {@link EurekaHttpClient} to be used by applications.
  *
  * @author Tomasz Bak
@@ -38,6 +39,7 @@ public class JerseyApplicationClient extends AbstractJerseyEurekaHttpClient {
 
     @Override
     protected void addExtraHeaders(Builder webResource) {
+        // 要额外添加的请求头
         if (additionalHeaders != null) {
             for (String key : additionalHeaders.keySet()) {
                 webResource.header(key, additionalHeaders.get(key));

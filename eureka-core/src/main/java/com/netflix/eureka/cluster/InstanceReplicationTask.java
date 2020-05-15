@@ -5,6 +5,8 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 
 /**
+ * 同步应用实例任务抽象类
+ * <p>
  * Base {@link ReplicationTask} class for instance related replication requests.
  *
  * @author Tomasz Bak
@@ -12,6 +14,7 @@ import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 public abstract class InstanceReplicationTask extends ReplicationTask {
 
     /**
+     * 对于取消请求，可能没有InstanceInfo对象可用，因此需要显式存储app / id对
      * For cancel request there may be no InstanceInfo object available so we need to store app/id pair
      * explicitly.
      */

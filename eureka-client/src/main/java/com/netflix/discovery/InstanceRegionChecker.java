@@ -1,21 +1,27 @@
 package com.netflix.discovery;
 
-import javax.annotation.Nullable;
-import java.util.Map;
-
 import com.netflix.appinfo.AmazonInfo;
 import com.netflix.appinfo.DataCenterInfo;
 import com.netflix.appinfo.InstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+import java.util.Map;
+
 /**
+ * 应用实例信息区域( region )校验
+ *
  * @author Nitesh Kant
  */
 public class InstanceRegionChecker {
     private static Logger logger = LoggerFactory.getLogger(InstanceRegionChecker.class);
 
     private final AzToRegionMapper azToRegionMapper;
+
+    /**
+     * 本地区域
+     */
     private final String localRegion;
 
     InstanceRegionChecker(AzToRegionMapper azToRegionMapper, String localRegion) {
@@ -25,8 +31,10 @@ public class InstanceRegionChecker {
 
     @Nullable
     public String getInstanceRegion(InstanceInfo instanceInfo) {
+        // 数据中心为空，返回，获取不到
         if (instanceInfo.getDataCenterInfo() == null || instanceInfo.getDataCenterInfo().getName() == null) {
-            logger.warn("Cannot get region for instance id:{}, app:{} as dataCenterInfo is null. Returning local:{} by default",
+            logger.warn("Cannot get region for instance id:{}, app:{} as dataCenterInfo is null. Returning local:{} " +
+                            "by default",
                     instanceInfo.getId(), instanceInfo.getAppName(), localRegion);
 
             return localRegion;

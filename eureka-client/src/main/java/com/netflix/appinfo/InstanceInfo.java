@@ -15,15 +15,6 @@
  */
 package com.netflix.appinfo;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -41,7 +32,15 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+
 /**
+ * 持有注册eureka server的注册信息，用来被其他发现
+ * `@Auto` 带注释的字段按原样进行序列化
+ * `@Serializer` 按指定的序列化
+ * <p>
  * The class that holds information required for registration with
  * <tt>Eureka Server</tt> and to be discovered by other components.
  * <p>
@@ -137,18 +136,39 @@ public class InstanceInfo {
     private volatile DataCenterInfo dataCenterInfo;
     private volatile String hostName;
     private volatile InstanceStatus status = InstanceStatus.UP;
+
+    /**
+     * 设置此实例的覆盖状态。通常由外部进程设置，以禁止实例获取流量。
+     */
     private volatile InstanceStatus overriddenStatus = InstanceStatus.UNKNOWN;
     @XStreamOmitField
+    /**
+     * 标记实例信息是否更改，更改则在下次心跳中通知
+     */
     private volatile boolean isInstanceInfoDirty = false;
+    /**
+     * 实例租期续约信息
+     */
     private volatile LeaseInfo leaseInfo;
     @Auto
     private volatile Boolean isCoordinatingDiscoveryServer = Boolean.FALSE;
     @XStreamAlias("metadata")
     private volatile Map<String, String> metadata;
+    /**
+     * 最后一次更新的时间戳
+     */
     @Auto
     private volatile Long lastUpdatedTimestamp;
+
+    /**
+     * 实例信息被更改的时间
+     */
     @Auto
     private volatile Long lastDirtyTimestamp;
+
+    /**
+     * 实例的动作，用于最近改变队列使用
+     */
     @Auto
     private volatile ActionType actionType;
     @Auto
@@ -233,7 +253,7 @@ public class InstanceInfo {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "InstanceInfo [instanceId = " + this.instanceId + ", appName = " + this.appName +
                 ", hostName = " + this.hostName + ", status = " + this.status +
                 ", ipAddr = " + this.ipAddr + ", port = " + this.port + ", securePort = " + this.securePort +
@@ -315,11 +335,26 @@ public class InstanceInfo {
 
 
     public enum InstanceStatus {
+        /**
+         * 准备接受流量
+         */
         UP, // Ready to receive traffic
+        /**
+         * 不发送流量，心跳检查回调失败
+         */
         DOWN, // Do not send traffic- healthcheck callback failed
+        /**
+         * 启动中，即将开始，等待初始化完成
+         */
         STARTING, // Just about starting- initializations to be done - do not
         // send traffic
+        /**
+         * 服务意外关闭
+         */
         OUT_OF_SERVICE, // Intentionally shutdown for traffic
+        /**
+         * 位置
+         */
         UNKNOWN;
 
         public static InstanceStatus toEnum(String s) {
@@ -328,7 +363,8 @@ public class InstanceInfo {
                     return InstanceStatus.valueOf(s.toUpperCase());
                 } catch (IllegalArgumentException e) {
                     // ignore and fall through to unknown
-                    logger.debug("illegal argument supplied to InstanceStatus.valueOf: {}, defaulting to {}", s, UNKNOWN);
+                    logger.debug("illegal argument supplied to InstanceStatus.valueOf: {}, defaulting to {}", s,
+                            UNKNOWN);
                 }
             }
             return UNKNOWN;
@@ -365,14 +401,21 @@ public class InstanceInfo {
     }
 
     public enum PortType {
-        SECURE, UNSECURE
+        /**
+         * 安全端口
+         */
+        SECURE,
+        /**
+         * 不安全端口
+         */
+        UNSECURE
     }
 
     public static final class Builder {
         private static final String COLON = ":";
         private static final String HTTPS_PROTOCOL = "https://";
         private static final String HTTP_PROTOCOL = "http://";
-        private final Function<String,String> intern;
+        private final Function<String, String> intern;
 
         private static final class LazyHolder {
             private static final VipAddressResolver DEFAULT_VIP_ADDRESS_RESOLVER = new Archaius1VipAddressResolver();
@@ -386,7 +429,7 @@ public class InstanceInfo {
 
         private String namespace;
 
-        private Builder(InstanceInfo result, VipAddressResolver vipAddressResolver, Function<String,String> intern) {
+        private Builder(InstanceInfo result, VipAddressResolver vipAddressResolver, Function<String, String> intern) {
             this.vipAddressResolver = vipAddressResolver;
             this.result = result;
             this.intern = intern != null ? intern : StringCache::intern;
@@ -400,7 +443,7 @@ public class InstanceInfo {
             return new Builder(new InstanceInfo(), LazyHolder.DEFAULT_VIP_ADDRESS_RESOLVER, null);
         }
 
-        public static Builder newBuilder(Function<String,String> intern) {
+        public static Builder newBuilder(Function<String, String> intern) {
             return new Builder(new InstanceInfo(), LazyHolder.DEFAULT_VIP_ADDRESS_RESOLVER, intern);
         }
 
@@ -424,12 +467,12 @@ public class InstanceInfo {
             result.appName = intern.apply(appName.toUpperCase(Locale.ROOT));
             return this;
         }
-        
+
         public Builder setAppNameForDeser(String appName) {
             result.appName = appName;
             return this;
         }
-        
+
 
         public Builder setAppGroupName(String appGroupName) {
             if (appGroupName != null) {
@@ -439,6 +482,7 @@ public class InstanceInfo {
             }
             return this;
         }
+
         public Builder setAppGroupNameForDeser(String appGroupName) {
             result.appGroupName = appGroupName;
             return this;
@@ -904,12 +948,12 @@ public class InstanceInfo {
     /**
      * Return the default network address to connect to this instance. Typically this would be the fully
      * qualified public hostname.
-     *
+     * <p>
      * However the user can configure the {@link EurekaInstanceConfig} to change the default value used
      * to populate this field using the {@link EurekaInstanceConfig#getDefaultAddressResolutionOrder()} property.
-     *
+     * <p>
      * If a use case need more specific hostnames or ips, please use data from {@link #getDataCenterInfo()}.
-     *
+     * <p>
      * For legacy reasons, it is difficult to introduce a new address-type field that is agnostic to hostname/ip.
      *
      * @return the default address (by default the public hostname)
@@ -931,6 +975,7 @@ public class InstanceInfo {
     }
 
     /**
+     * 实例id -》 数据中心唯一id -》 主机名
      * Returns the unique id of the instance.
      * (Note) now that id is set at creation time within the instanceProvider, why do the other checks?
      * This is still necessary for backwards compatibility when upgrading in a deployment with multiple
@@ -1258,6 +1303,7 @@ public class InstanceInfo {
 
 
     /**
+     * 如果重置的时间大于以前的时间，重置变更标志
      * Unset the dirty flag iff the unsetDirtyTimestamp matches the lastDirtyTimestamp. No-op if
      * lastDirtyTimestamp > unsetDirtyTimestamp
      *
@@ -1271,6 +1317,11 @@ public class InstanceInfo {
     }
 
     /**
+     * 是否协调服务发现
+     * 如果此实例与返回实例的发现服务器相同，
+     * 则设置一个标志。
+     * 发现客户端使用此标志来标识正在协调/返回信息的发现服务器
+     * <p>
      * Sets a flag if this instance is the same as the discovery server that is
      * return the instances. This flag is used by the discovery clients to
      * identity the discovery server which is coordinating/returning the
@@ -1279,8 +1330,7 @@ public class InstanceInfo {
     public void setIsCoordinatingDiscoveryServer() {
         String instanceId = getId();
         if ((instanceId != null)
-                && (instanceId.equals(ApplicationInfoManager.getInstance()
-                .getInfo().getId()))) {
+                && (instanceId.equals(ApplicationInfoManager.getInstance().getInfo().getId()))) {
             isCoordinatingDiscoveryServer = Boolean.TRUE;
         } else {
             isCoordinatingDiscoveryServer = Boolean.FALSE;
@@ -1340,8 +1390,17 @@ public class InstanceInfo {
     }
 
     public enum ActionType {
+        /**
+         * 添加到注册中心
+         */
         ADDED, // Added in the discovery server
+        /**
+         * 改变注册中心
+         */
         MODIFIED, // Changed in the discovery server
+        /**
+         * 从注册中心删除
+         */
         DELETED
         // Deleted from the discovery server
     }
@@ -1350,8 +1409,7 @@ public class InstanceInfo {
      * Register application specific metadata to be sent to the discovery
      * server.
      *
-     * @param runtimeMetadata
-     *            Map containing key/value pairs.
+     * @param runtimeMetadata Map containing key/value pairs.
      */
     synchronized void registerRuntimeMetadata(
             Map<String, String> runtimeMetadata) {
@@ -1360,17 +1418,19 @@ public class InstanceInfo {
     }
 
     /**
+     * 获取可用中心，数组的第一个，或者 default
+     * <p>
      * Get the zone that a particular instance is in.
      * Note that for AWS deployments, myInfo should contain AWS dataCenterInfo which should contain
      * the AWS zone of the instance, and availZones is ignored.
      *
-     * @param availZones the list of available zones for non-AWS deployments
-     * @param myInfo
-     *            - The InstanceInfo object of the instance.
+     * @param availZones the list of available zones for non-AWS deployments 可用中心
+     * @param myInfo     - The InstanceInfo object of the instance. 实例对象的信息
      * @return - The zone in which the particular instance belongs to.
      */
     public static String getZone(String[] availZones, InstanceInfo myInfo) {
-        String instanceZone = ((availZones == null || availZones.length == 0) ? "default"
+        String instanceZone = ((availZones == null || availZones.length == 0)
+                ? "default"
                 : availZones[0]);
         if (myInfo != null
                 && myInfo.getDataCenterInfo().getName() == DataCenterInfo.Name.Amazon) {

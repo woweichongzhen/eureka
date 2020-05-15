@@ -16,18 +16,22 @@
 
 package com.netflix.appinfo;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.discovery.StatusChangeEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
+ * 应用信息管理
+ * 注册Eureka Server时初始化注册需要的信息，提供其他组件发现的信息
+ * <p>
+ * <p>
  * The class that initializes information required for registration with
  * <tt>Eureka Server</tt> and to be discovered by other components.
  *
@@ -40,9 +44,7 @@ import org.slf4j.LoggerFactory;
  * {@link AbstractInstanceConfig}.
  * </p>
  *
- *
  * @author Karthik Ranganathan, Greg Kim
- *
  */
 @Singleton
 public class ApplicationInfoManager {
@@ -55,12 +57,29 @@ public class ApplicationInfoManager {
         }
     };
 
+    /**
+     * 单例
+     */
     private static ApplicationInfoManager instance = new ApplicationInfoManager(null, null, null);
 
+    /**
+     * 状态变更监听器
+     */
     protected final Map<String, StatusChangeListener> listeners;
+
+    /**
+     * 应用实例状态匹配
+     */
     private final InstanceStatusMapper instanceStatusMapper;
 
+    /**
+     * 应用实例信息
+     */
     private InstanceInfo instanceInfo;
+
+    /**
+     * 应用实例配置
+     */
     private EurekaInstanceConfig config;
 
     public static class OptionalArgs {
@@ -77,6 +96,8 @@ public class ApplicationInfoManager {
     }
 
     /**
+     * 使用依赖注入创建
+     * <p>
      * public for DI use. This class should be in singleton scope so do not create explicitly.
      * Either use DI or create this explicitly using one of the other public constructors.
      */
@@ -104,7 +125,8 @@ public class ApplicationInfoManager {
     }
 
     /**
-     * @deprecated 2016-09-19 prefer {@link #ApplicationInfoManager(EurekaInstanceConfig, com.netflix.appinfo.ApplicationInfoManager.OptionalArgs)}
+     * @deprecated 2016-09-19 prefer
+     * {@link #ApplicationInfoManager(EurekaInstanceConfig, com.netflix.appinfo.ApplicationInfoManager.OptionalArgs)}
      */
     @Deprecated
     public ApplicationInfoManager(EurekaInstanceConfig config) {
@@ -119,6 +141,11 @@ public class ApplicationInfoManager {
         return instance;
     }
 
+    /**
+     * 基于 config 把配置注入到 instanceInfo 中
+     *
+     * @param config 实例配置
+     */
     public void initComponent(EurekaInstanceConfig config) {
         try {
             this.config = config;
@@ -145,7 +172,7 @@ public class ApplicationInfoManager {
      * Register user-specific instance meta data. Application can send any other
      * additional meta data that need to be accessed for other reasons.The data
      * will be periodically sent to the eureka server.
-     *
+     * <p>
      * Please Note that metadata added via this method is not guaranteed to be submitted
      * to the eureka servers upon initial registration, and may be submitted as an update
      * at a subsequent time. If you want guaranteed metadata for initial registration,
@@ -158,6 +185,8 @@ public class ApplicationInfoManager {
     }
 
     /**
+     * 设置新状态，并调用监听器通知状态改变
+     * <p>
      * Set the status of this instance. Application can use this to indicate
      * whether it is ready to receive traffic. Setting the status here also notifies all registered listeners
      * of a status change event.
@@ -191,10 +220,12 @@ public class ApplicationInfoManager {
     }
 
     /**
+     * 刷新数据中心信息，如果主机名改变了，重新获取数据中心信息
+     * <p>
      * Refetches the hostname to check if it has changed. If it has, the entire
      * <code>DataCenterInfo</code> is refetched and passed on to the eureka
      * server on next heartbeat.
-     *
+     * <p>
      * see {@link InstanceInfo#getHostName()} for explanation on why the hostname is used as the default address
      */
     public void refreshDataCenterInfoIfRequired() {
@@ -202,7 +233,8 @@ public class ApplicationInfoManager {
 
         String existingSpotInstanceAction = null;
         if (instanceInfo.getDataCenterInfo() instanceof AmazonInfo) {
-            existingSpotInstanceAction = ((AmazonInfo) instanceInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.spotInstanceAction);
+            existingSpotInstanceAction =
+                    ((AmazonInfo) instanceInfo.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.spotInstanceAction);
         }
 
         String newAddress;
@@ -210,24 +242,27 @@ public class ApplicationInfoManager {
             // Refresh data center info, and return up to date address
             newAddress = ((RefreshableInstanceConfig) config).resolveDefaultAddress(true);
         } else {
+            // 刷新主机名
             newAddress = config.getHostName(true);
         }
         String newIp = config.getIpAddress();
 
         if (newAddress != null && !newAddress.equals(existingAddress)) {
             logger.warn("The address changed from : {} => {}", existingAddress, newAddress);
+            // 更新实例信息
             updateInstanceInfo(newAddress, newIp);
         }
 
         if (config.getDataCenterInfo() instanceof AmazonInfo) {
-            String newSpotInstanceAction = ((AmazonInfo) config.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.spotInstanceAction);
+            String newSpotInstanceAction =
+                    ((AmazonInfo) config.getDataCenterInfo()).get(AmazonInfo.MetaDataKey.spotInstanceAction);
             if (newSpotInstanceAction != null && !newSpotInstanceAction.equals(existingSpotInstanceAction)) {
                 logger.info(String.format("The spot instance termination action changed from: %s => %s",
                         existingSpotInstanceAction,
                         newSpotInstanceAction));
-                updateInstanceInfo(null , null );
+                updateInstanceInfo(null, null);
             }
-        }        
+        }
     }
 
     private void updateInstanceInfo(String newAddress, String newIp) {
@@ -245,6 +280,9 @@ public class ApplicationInfoManager {
         instanceInfo.setIsDirty();
     }
 
+    /**
+     * 刷新租期信息
+     */
     public void refreshLeaseInfoIfRequired() {
         LeaseInfo leaseInfo = instanceInfo.getLeaseInfo();
         if (leaseInfo == null) {
@@ -252,7 +290,8 @@ public class ApplicationInfoManager {
         }
         int currentLeaseDuration = config.getLeaseExpirationDurationInSeconds();
         int currentLeaseRenewal = config.getLeaseRenewalIntervalInSeconds();
-        if (leaseInfo.getDurationInSecs() != currentLeaseDuration || leaseInfo.getRenewalIntervalInSecs() != currentLeaseRenewal) {
+        if (leaseInfo.getDurationInSecs() != currentLeaseDuration
+                || leaseInfo.getRenewalIntervalInSecs() != currentLeaseRenewal) {
             LeaseInfo newLeaseInfo = LeaseInfo.Builder.newBuilder()
                     .setRenewalIntervalInSecs(currentLeaseRenewal)
                     .setDurationInSecs(currentLeaseDuration)
@@ -262,12 +301,19 @@ public class ApplicationInfoManager {
         }
     }
 
+    /**
+     * 状态改变监听器
+     */
     public static interface StatusChangeListener {
+
         String getId();
 
         void notify(StatusChangeEvent statusChangeEvent);
     }
 
+    /**
+     * 状态转换映射
+     */
     public static interface InstanceStatusMapper {
 
         /**

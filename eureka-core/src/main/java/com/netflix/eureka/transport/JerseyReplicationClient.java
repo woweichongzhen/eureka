@@ -1,12 +1,5 @@
 package com.netflix.eureka.transport;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
-import java.net.InetAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.UnknownHostException;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.EurekaIdentityHeaderFilter;
@@ -31,9 +24,18 @@ import com.sun.jersey.client.apache4.ApacheHttpClient4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.UnknownHostException;
+
 import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEurekaHttpResponse;
 
 /**
+ * Eureka-Server 集群内，Eureka-Server 请求 其它的Eureka-Server 的网络通信
+ *
  * @author Tomasz Bak
  */
 public class JerseyReplicationClient extends AbstractJerseyEurekaHttpClient implements HttpReplicationClient {
@@ -51,6 +53,8 @@ public class JerseyReplicationClient extends AbstractJerseyEurekaHttpClient impl
 
     @Override
     protected void addExtraHeaders(Builder webResource) {
+        // 添加自定义头 x-netflix-discovery-replication=true
+        // 标识为复制请求
         webResource.header(PeerEurekaNode.HEADER_REPLICATION, "true");
     }
 
@@ -59,7 +63,8 @@ public class JerseyReplicationClient extends AbstractJerseyEurekaHttpClient impl
      * instance copy.
      */
     @Override
-    public EurekaHttpResponse<InstanceInfo> sendHeartBeat(String appName, String id, InstanceInfo info, InstanceStatus overriddenStatus) {
+    public EurekaHttpResponse<InstanceInfo> sendHeartBeat(String appName, String id, InstanceInfo info,
+                                                          InstanceStatus overriddenStatus) {
         String urlPath = "apps/" + appName + '/' + id;
         ClientResponse response = null;
         try {
@@ -80,7 +85,8 @@ public class JerseyReplicationClient extends AbstractJerseyEurekaHttpClient impl
             return anEurekaHttpResponse(response.getStatus(), infoFromPeer).type(MediaType.APPLICATION_JSON_TYPE).build();
         } finally {
             if (logger.isDebugEnabled()) {
-                logger.debug("[heartbeat] Jersey HTTP PUT {}; statusCode={}", urlPath, response == null ? "N/A" : response.getStatus());
+                logger.debug("[heartbeat] Jersey HTTP PUT {}; statusCode={}", urlPath, response == null ? "N/A" :
+                        response.getStatus());
             }
             if (response != null) {
                 response.close();
@@ -137,7 +143,11 @@ public class JerseyReplicationClient extends AbstractJerseyEurekaHttpClient impl
         jerseyClient.destroyResources();
     }
 
-    public static JerseyReplicationClient createReplicationClient(EurekaServerConfig config, ServerCodecs serverCodecs, String serviceUrl) {
+    /**
+     * 静态创建 JerseyReplicationClient
+     */
+    public static JerseyReplicationClient createReplicationClient(EurekaServerConfig config,
+                                                                  ServerCodecs serverCodecs, String serviceUrl) {
         String name = JerseyReplicationClient.class.getSimpleName() + ": " + serviceUrl + "apps/: ";
 
         EurekaJerseyClient jerseyClient;

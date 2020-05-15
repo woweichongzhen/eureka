@@ -43,18 +43,15 @@ import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.CoreProtocolPNames;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
+import java.util.*;
 
 import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
 
 /**
+ * 创建 JerseyApplicationClient 的工厂类
+ *
  * @author Tomasz Bak
  */
 public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
@@ -84,7 +81,8 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
         this(jerseyClient, null, -1, additionalHeaders);
     }
 
-    public JerseyEurekaHttpClientFactory(ApacheHttpClient4 apacheClient, long connectionIdleTimeout, Map<String, String> additionalHeaders) {
+    public JerseyEurekaHttpClientFactory(ApacheHttpClient4 apacheClient, long connectionIdleTimeout, Map<String,
+            String> additionalHeaders) {
         this(null, apacheClient, connectionIdleTimeout, additionalHeaders);
     }
 
@@ -120,12 +118,13 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
             apacheClient.destroy();
         }
     }
-    
+
     public static JerseyEurekaHttpClientFactory create(EurekaClientConfig clientConfig,
-            Collection<ClientFilter> additionalFilters,
-            InstanceInfo myInstanceInfo,
-            AbstractEurekaIdentity clientIdentity) {
-        return create(clientConfig, additionalFilters, myInstanceInfo, clientIdentity, Optional.empty(), Optional.empty());
+                                                       Collection<ClientFilter> additionalFilters,
+                                                       InstanceInfo myInstanceInfo,
+                                                       AbstractEurekaIdentity clientIdentity) {
+        return create(clientConfig, additionalFilters, myInstanceInfo, clientIdentity, Optional.empty(),
+                Optional.empty());
     }
 
     public static JerseyEurekaHttpClientFactory create(EurekaClientConfig clientConfig,
@@ -134,18 +133,22 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
                                                        AbstractEurekaIdentity clientIdentity,
                                                        Optional<SSLContext> sslContext,
                                                        Optional<HostnameVerifier> hostnameVerifier) {
-        boolean useExperimental = "true".equals(clientConfig.getExperimental("JerseyEurekaHttpClientFactory.useNewBuilder"));
+        boolean useExperimental = "true".equals(clientConfig.getExperimental("JerseyEurekaHttpClientFactory" +
+                ".useNewBuilder"));
 
         JerseyEurekaHttpClientFactoryBuilder clientBuilder = (useExperimental ? experimentalBuilder() : newBuilder())
+                // // 客户端附加过滤器
                 .withAdditionalFilters(additionalFilters)
+                // 应用实例
                 .withMyInstanceInfo(myInstanceInfo)
                 .withUserAgent("Java-EurekaClient")
                 .withClientConfig(clientConfig)
                 .withClientIdentity(clientIdentity);
-        
+
         sslContext.ifPresent(clientBuilder::withSSLContext);
         hostnameVerifier.ifPresent(clientBuilder::withHostnameVerifier);
 
+        // 设置 Client Name
         if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
             clientBuilder.withClientName("DiscoveryClient-HTTPClient-System").withSystemSSLConfiguration();
         } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
@@ -170,6 +173,8 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
     }
 
     /**
+     * JerseyEurekaHttpClientFactory 内部类，用于创建 JerseyEurekaHttpClientFactory
+     * <p>
      * Currently use EurekaJerseyClientBuilder. Once old transport in DiscoveryClient is removed, incorporate
      * EurekaJerseyClientBuilder here, and remove it.
      */
@@ -215,14 +220,14 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
                     .withConnectionIdleTimeout((int) connectionIdleTimeout)
                     .withEncoderWrapper(encoderWrapper)
                     .withDecoderWrapper(decoderWrapper)
-                    .withProxy(proxyHost,String.valueOf(proxyPort),proxyUserName,proxyPassword);
+                    .withProxy(proxyHost, String.valueOf(proxyPort), proxyUserName, proxyPassword);
 
             if (systemSSL) {
                 clientBuilder.withSystemSSLConfiguration();
             } else if (sslContext != null) {
                 clientBuilder.withCustomSSL(sslContext);
             }
-            
+
             if (hostnameVerifier != null) {
                 clientBuilder.withHostnameVerifier(hostnameVerifier);
             }
@@ -242,7 +247,8 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
                 addProxyConfiguration(clientConfig);
             }
 
-            DiscoveryJerseyProvider discoveryJerseyProvider = new DiscoveryJerseyProvider(encoderWrapper, decoderWrapper);
+            DiscoveryJerseyProvider discoveryJerseyProvider = new DiscoveryJerseyProvider(encoderWrapper,
+                    decoderWrapper);
             clientConfig.getSingletons().add(discoveryJerseyProvider);
 
             // Common properties to all clients
@@ -271,7 +277,8 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
             try {
                 ThreadSafeClientConnManager connectionManager;
                 if (sslContext != null) {
-                    SchemeSocketFactory socketFactory = new SSLSocketFactory(sslContext, new AllowAllHostnameVerifier());
+                    SchemeSocketFactory socketFactory = new SSLSocketFactory(sslContext,
+                            new AllowAllHostnameVerifier());
                     SchemeRegistry sslSchemeRegistry = new SchemeRegistry();
                     sslSchemeRegistry.register(new Scheme("https", 443, socketFactory));
                     connectionManager = new ThreadSafeClientConnManager(sslSchemeRegistry);
@@ -294,7 +301,8 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
                 clientConfig.getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_USERNAME, "guest");
                 clientConfig.getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_PASSWORD, "guest");
             }
-            clientConfig.getProperties().put(DefaultApacheHttpClient4Config.PROPERTY_PROXY_URI, "http://" + proxyHost + ':' + proxyPort);
+            clientConfig.getProperties().put(DefaultApacheHttpClient4Config.PROPERTY_PROXY_URI,
+                    "http://" + proxyHost + ':' + proxyPort);
         }
 
         private void addFilters(ApacheHttpClient4 discoveryApacheClient) {

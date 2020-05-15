@@ -17,12 +17,12 @@
 package com.netflix.discovery.shared;
 
 /**
+ * 实用程序类，用于存储需要成对存在的任何信息
  * An utility class for stores any information that needs to exist as a pair.
- *
- * @author Karthik Ranganathan
  *
  * @param <E1> Generics indicating the type information for the first one in the pair.
  * @param <E2> Generics indicating the type information for the second one in the pair.
+ * @author Karthik Ranganathan
  */
 public class Pair<E1, E2> {
     public E1 first() {

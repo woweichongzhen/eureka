@@ -1,17 +1,22 @@
 package com.netflix.eureka.cluster.protocol;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.discovery.provider.Serializer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
+ * 批量同步返回
  * The jersey resource class that generates the replication batch response.
  */
 @Serializer("jackson") // For backwards compatibility with DiscoveryJerseyProvider
 public class ReplicationListResponse {
+
+    /**
+     * 返回列表
+     */
     private List<ReplicationInstanceResponse> responseList;
 
     public ReplicationListResponse() {

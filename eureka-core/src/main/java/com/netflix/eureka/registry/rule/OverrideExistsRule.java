@@ -8,8 +8,10 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 /**
+ * 是否对实例状态进行重写过，重写过返回重写后的
+ * <p>
  * This rule checks to see if we have overrides for an instance and if we do then we return those.
- *
+ * <p>
  * Created by Nikos Michalakis on 7/13/16.
  */
 public class OverrideExistsRule implements InstanceStatusOverrideRule {
@@ -23,7 +25,8 @@ public class OverrideExistsRule implements InstanceStatusOverrideRule {
     }
 
     @Override
-    public StatusOverrideResult apply(InstanceInfo instanceInfo, Lease<InstanceInfo> existingLease, boolean isReplication) {
+    public StatusOverrideResult apply(InstanceInfo instanceInfo, Lease<InstanceInfo> existingLease,
+                                      boolean isReplication) {
         InstanceInfo.InstanceStatus overridden = statusOverrides.get(instanceInfo.getId());
         // If there are instance specific overrides, then they win - otherwise the ASG status
         if (overridden != null) {

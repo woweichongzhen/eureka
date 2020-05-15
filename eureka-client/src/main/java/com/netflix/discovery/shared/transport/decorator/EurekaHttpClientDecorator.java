@@ -24,6 +24,8 @@ import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 
 /**
+ * EurekaHttpClient 委托者抽象类
+ *
  * @author Tomasz Bak
  */
 public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
@@ -43,12 +45,25 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
         GetApplicationInstance
     }
 
+    /**
+     * 请求执行器
+     */
     public interface RequestExecutor<R> {
+        /**
+         * 委托其他 http客户端实现类执行请求
+         */
         EurekaHttpResponse<R> execute(EurekaHttpClient delegate);
 
+        /**
+         * 获取请求类型
+         * {@link RequestType}
+         */
         RequestType getRequestType();
     }
 
+    /**
+     * 调用请求执行器 执行请求
+     */
     protected abstract <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor);
 
     @Override
@@ -56,6 +71,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
         return execute(new RequestExecutor<Void>() {
             @Override
             public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
+                // 调用委托者执行请求
                 return delegate.register(info);
             }
 
@@ -100,7 +116,8 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     }
 
     @Override
-    public EurekaHttpResponse<Void> statusUpdate(final String appName, final String id, final InstanceStatus newStatus, final InstanceInfo info) {
+    public EurekaHttpResponse<Void> statusUpdate(final String appName, final String id,
+                                                 final InstanceStatus newStatus, final InstanceInfo info) {
         return execute(new RequestExecutor<Void>() {
             @Override
             public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
@@ -115,7 +132,8 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
     }
 
     @Override
-    public EurekaHttpResponse<Void> deleteStatusOverride(final String appName, final String id, final InstanceInfo info) {
+    public EurekaHttpResponse<Void> deleteStatusOverride(final String appName, final String id,
+                                                         final InstanceInfo info) {
         return execute(new RequestExecutor<Void>() {
             @Override
             public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {

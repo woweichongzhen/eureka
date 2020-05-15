@@ -16,12 +16,14 @@
 
 package com.netflix.discovery.shared.dns;
 
+import com.netflix.discovery.endpoint.DnsResolver;
+
 import javax.annotation.Nullable;
 import java.util.List;
 
-import com.netflix.discovery.endpoint.DnsResolver;
-
 /**
+ * dns服务实现类
+ *
  * @author Tomasz Bak
  */
 public class DnsServiceImpl implements DnsService {
