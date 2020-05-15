@@ -346,3 +346,10 @@ eureka基于令牌桶算法实现限速。
 ![](./15-令牌桶算法.png)
 
 ![](./16-令牌桶算法流程.png)
+
+在 `#onDemandUpdate()` 方法，调用 RateLimiter#acquire(...) 方法，获取令牌。
+
+- 若获取成功，向 Eureka-Server 发起注册，同步应用实例信息。
+- 若获取失败，不向 Eureka-Server 发起注册，同步应用实例信息。这样会不会有问题？答案是不会。
+  - InstanceInfoReplicator 会固定周期检查本地应用实例是否有没向 Eureka-Server ，若未同步，则发起同步。
+  - Eureka-Client 向 Eureka-Server 心跳时，Eureka-Server 会对比应用实例的 lastDirtyTimestamp ，若 Eureka-Client 的更大，则 Eureka-Server 返回 404 状态码。Eureka-Client 接收到 404 状态码后，发起注册同步。
