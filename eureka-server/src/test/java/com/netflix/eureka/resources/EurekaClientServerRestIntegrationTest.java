@@ -1,14 +1,5 @@
 package com.netflix.eureka.resources;
 
-import java.io.File;
-import java.io.FilenameFilter;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.regex.Pattern;
-
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.shared.resolver.DefaultEndpoint;
@@ -29,6 +20,15 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.FilenameFilter;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.regex.Pattern;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -53,16 +53,16 @@ public class EurekaClientServerRestIntegrationTest {
 
     private static EurekaServerConfig eurekaServerConfig;
 
-    private static Server server;
+    private static Server                 server;
     private static TransportClientFactory httpClientFactory;
 
-    private static EurekaHttpClient jerseyEurekaClient;
+    private static EurekaHttpClient        jerseyEurekaClient;
     private static JerseyReplicationClient jerseyReplicationClient;
 
     /**
      * We do not include ASG data to prevent server from consulting AWS for its status.
      */
-    private static final InstanceInfoGenerator infoGenerator = InstanceInfoGenerator.newBuilder(10, 2).withAsg(false).build();
+    private static final InstanceInfoGenerator  infoGenerator  = InstanceInfoGenerator.newBuilder(10, 2).withAsg(false).build();
     private static final Iterator<InstanceInfo> instanceInfoIt = infoGenerator.serviceIterator();
 
     private static String eurekaServiceUrl;
@@ -121,7 +121,8 @@ public class EurekaClientServerRestIntegrationTest {
         jerseyEurekaClient.register(instanceInfo);
 
         // Now send heartbeat
-        EurekaHttpResponse<InstanceInfo> heartBeatResponse = jerseyReplicationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
+        EurekaHttpResponse<InstanceInfo> heartBeatResponse = jerseyReplicationClient.sendHeartBeat(instanceInfo.getAppName(),
+                instanceInfo.getId(), instanceInfo, null);
 
         assertThat(heartBeatResponse.getStatusCode(), is(equalTo(200)));
         assertThat(heartBeatResponse.getEntity(), is(nullValue()));
@@ -132,7 +133,8 @@ public class EurekaClientServerRestIntegrationTest {
         InstanceInfo instanceInfo = instanceInfoIt.next();
 
         // Now send heartbeat
-        EurekaHttpResponse<InstanceInfo> heartBeatResponse = jerseyReplicationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
+        EurekaHttpResponse<InstanceInfo> heartBeatResponse = jerseyReplicationClient.sendHeartBeat(instanceInfo.getAppName(),
+                instanceInfo.getId(), instanceInfo, null);
 
         assertThat(heartBeatResponse.getStatusCode(), is(equalTo(404)));
     }
@@ -165,14 +167,16 @@ public class EurekaClientServerRestIntegrationTest {
         jerseyEurekaClient.register(instanceInfo);
 
         // Now override status
-        EurekaHttpResponse<Void> overrideUpdateResponse = jerseyEurekaClient.statusUpdate(instanceInfo.getAppName(), instanceInfo.getId(), InstanceStatus.DOWN, instanceInfo);
+        EurekaHttpResponse<Void> overrideUpdateResponse = jerseyEurekaClient.statusUpdate(instanceInfo.getAppName(), instanceInfo.getId(),
+                InstanceStatus.DOWN, instanceInfo);
         assertThat(overrideUpdateResponse.getStatusCode(), is(equalTo(200)));
 
         InstanceInfo fetchedInstance = expectInstanceInfoInRegistry(instanceInfo);
         assertThat(fetchedInstance.getStatus(), is(equalTo(InstanceStatus.DOWN)));
 
         // Now remove override
-        EurekaHttpResponse<Void> deleteOverrideResponse = jerseyEurekaClient.deleteStatusOverride(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo);
+        EurekaHttpResponse<Void> deleteOverrideResponse = jerseyEurekaClient.deleteStatusOverride(instanceInfo.getAppName(),
+                instanceInfo.getId(), instanceInfo);
         assertThat(deleteOverrideResponse.getStatusCode(), is(equalTo(200)));
 
         fetchedInstance = expectInstanceInfoInRegistry(instanceInfo);
@@ -190,7 +194,8 @@ public class EurekaClientServerRestIntegrationTest {
                 .withLastDirtyTimestamp(System.currentTimeMillis())
                 .withStatus(instanceInfo.getStatus().name())
                 .build();
-        EurekaHttpResponse<ReplicationListResponse> httpResponse = jerseyReplicationClient.submitBatchUpdates(new ReplicationList(replicationInstance));
+        EurekaHttpResponse<ReplicationListResponse> httpResponse = jerseyReplicationClient.submitBatchUpdates(
+                new ReplicationList(replicationInstance));
 
         assertThat(httpResponse.getStatusCode(), is(equalTo(200)));
         List<ReplicationInstanceResponse> replicationListResponse = httpResponse.getEntity().getResponseList();
@@ -244,6 +249,18 @@ public class EurekaClientServerRestIntegrationTest {
         server.start();
 
         eurekaServiceUrl = "http://localhost:8080/v2";
+
+        //server = new Server(8080);
+        //
+        //WebAppContext webapp = new WebAppContext(new File("./eureka-server/src/main/webapp").getAbsolutePath(), "/");
+        //webapp.setDescriptor(new File("./eureka-server/src/main/webapp/WEB-INF/web.xml").getAbsolutePath());
+        //webapp.setResourceBase(new File("./eureka-server/src/main/resources").getAbsolutePath());
+        //webapp.setClassLoader(Thread.currentThread().getContextClassLoader());
+        //server.setHandler(webapp);
+        //
+        //server.start();
+        //
+        //eurekaServiceUrl = "http://localhost:8080/v2";
     }
 
     private static File findWar() {
@@ -256,7 +273,8 @@ public class EurekaClientServerRestIntegrationTest {
             }
         }
         if (dir == null) {
-            throw new IllegalStateException("No directory found at any in any pre-configured location: " + Arrays.toString(EUREKA1_WAR_DIRS));
+            throw new IllegalStateException(
+                    "No directory found at any in any pre-configured location: " + Arrays.toString(EUREKA1_WAR_DIRS));
         }
 
         File[] warFiles = dir.listFiles(new FilenameFilter() {

@@ -50,12 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ApplicationInfoManager {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationInfoManager.class);
 
-    private static final InstanceStatusMapper NO_OP_MAPPER = new InstanceStatusMapper() {
-        @Override
-        public InstanceStatus map(InstanceStatus prev) {
-            return prev;
-        }
-    };
+    private static final InstanceStatusMapper NO_OP_MAPPER = prev -> prev;
 
     /**
      * 单例
@@ -105,7 +100,7 @@ public class ApplicationInfoManager {
     public ApplicationInfoManager(EurekaInstanceConfig config, InstanceInfo instanceInfo, OptionalArgs optionalArgs) {
         this.config = config;
         this.instanceInfo = instanceInfo;
-        this.listeners = new ConcurrentHashMap<String, StatusChangeListener>();
+        this.listeners = new ConcurrentHashMap<>();
         if (optionalArgs != null) {
             this.instanceStatusMapper = optionalArgs.getInstanceStatusMapper();
         } else {
@@ -304,7 +299,7 @@ public class ApplicationInfoManager {
     /**
      * 状态改变监听器
      */
-    public static interface StatusChangeListener {
+    public interface StatusChangeListener {
 
         String getId();
 
@@ -314,7 +309,7 @@ public class ApplicationInfoManager {
     /**
      * 状态转换映射
      */
-    public static interface InstanceStatusMapper {
+    public interface InstanceStatusMapper {
 
         /**
          * given a starting {@link com.netflix.appinfo.InstanceInfo.InstanceStatus}, apply a mapping to return

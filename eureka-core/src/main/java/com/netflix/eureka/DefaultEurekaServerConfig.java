@@ -16,6 +16,18 @@
 
 package com.netflix.eureka;
 
+import com.netflix.config.ConfigurationManager;
+import com.netflix.config.DynamicBooleanProperty;
+import com.netflix.config.DynamicIntProperty;
+import com.netflix.config.DynamicPropertyFactory;
+import com.netflix.config.DynamicStringProperty;
+import com.netflix.config.DynamicStringSetProperty;
+import com.netflix.eureka.aws.AwsBindingStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,22 +36,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-import javax.inject.Singleton;
-
-import com.netflix.config.ConfigurationManager;
-import com.netflix.config.DynamicBooleanProperty;
-import com.netflix.config.DynamicIntProperty;
-import com.netflix.config.DynamicPropertyFactory;
-import com.netflix.config.DynamicStringProperty;
-import com.netflix.config.DynamicStringSetProperty;
-import com.netflix.eureka.aws.AwsBindingStrategy;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
- *
  * 基于配置文件的 Eureka-Server 配置实现类
  *
  * A default implementation of eureka server configuration as required by
@@ -61,25 +58,24 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  * @author Karthik Ranganathan
- *
  */
 @Singleton
 public class DefaultEurekaServerConfig implements EurekaServerConfig {
     private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";
-    private static final String TEST = "test";
-    private static final String EUREKA_ENVIRONMENT = "eureka.environment";
-    private static final Logger logger = LoggerFactory
+    private static final String TEST                            = "test";
+    private static final String EUREKA_ENVIRONMENT              = "eureka.environment";
+    private static final Logger logger                          = LoggerFactory
             .getLogger(DefaultEurekaServerConfig.class);
 
     /**
      * 配置文件对象
      */
-    private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory
+    private static final DynamicPropertyFactory configInstance    = com.netflix.config.DynamicPropertyFactory
             .getInstance();
     /**
-     * 配置文件
+     * 配置文件 属性文件 名称
      */
-    private static final DynamicStringProperty EUREKA_PROPS_FILE = DynamicPropertyFactory
+    private static final DynamicStringProperty  EUREKA_PROPS_FILE = DynamicPropertyFactory
             .getInstance().getStringProperty("eureka.server.props",
                     "eureka-server");
 
@@ -89,13 +85,18 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
 
     // These counters are checked for each HTTP request. Instantiating them per request like for the other
     // properties would be too costly.
-    private final DynamicStringSetProperty rateLimiterPrivilegedClients =
+    private final DynamicStringSetProperty rateLimiterPrivilegedClients        =
             new DynamicStringSetProperty(namespace + "rateLimiter.privilegedClients", Collections.<String>emptySet());
-    private final DynamicBooleanProperty rateLimiterEnabled = configInstance.getBooleanProperty(namespace + "rateLimiter.enabled", false);
-    private final DynamicBooleanProperty rateLimiterThrottleStandardClients = configInstance.getBooleanProperty(namespace + "rateLimiter.throttleStandardClients", false);
-    private final DynamicIntProperty rateLimiterBurstSize = configInstance.getIntProperty(namespace + "rateLimiter.burstSize", 10);
-    private final DynamicIntProperty rateLimiterRegistryFetchAverageRate = configInstance.getIntProperty(namespace + "rateLimiter.registryFetchAverageRate", 500);
-    private final DynamicIntProperty rateLimiterFullFetchAverageRate = configInstance.getIntProperty(namespace + "rateLimiter.fullFetchAverageRate", 100);
+    private final DynamicBooleanProperty   rateLimiterEnabled                  = configInstance.getBooleanProperty(
+            namespace + "rateLimiter.enabled", false);
+    private final DynamicBooleanProperty   rateLimiterThrottleStandardClients  = configInstance.getBooleanProperty(
+            namespace + "rateLimiter.throttleStandardClients", false);
+    private final DynamicIntProperty       rateLimiterBurstSize                = configInstance.getIntProperty(
+            namespace + "rateLimiter.burstSize", 10);
+    private final DynamicIntProperty       rateLimiterRegistryFetchAverageRate = configInstance.getIntProperty(
+            namespace + "rateLimiter.registryFetchAverageRate", 500);
+    private final DynamicIntProperty       rateLimiterFullFetchAverageRate     = configInstance.getIntProperty(
+            namespace + "rateLimiter.fullFetchAverageRate", 100);
 
     private final DynamicStringProperty listAutoScalingGroupsRoleName =
             configInstance.getStringProperty(namespace + "listAutoScalingGroupsRoleName", "ListAutoScalingGroups");
@@ -124,8 +125,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
         try {
             // ConfigurationManager
             // .loadPropertiesFromResources(eurekaPropsFile);
-            ConfigurationManager
-                    .loadCascadedPropertiesFromResources(eurekaPropsFile);
+            ConfigurationManager.loadCascadedPropertiesFromResources(eurekaPropsFile);
         } catch (IOException e) {
             logger.warn(
                     "Cannot find the properties specified : {}. This may be okay if there are other environment "
@@ -505,14 +505,15 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
      * Expects a property with name: [eureka-namespace].remoteRegionUrlsWithName and a value being a comma separated
      * list of region name & remote url pairs, separated with a ";". <br/>
      * So, if you wish to specify two regions with name region1 & region2, the property value will be:
-     <PRE>
-     eureka.remoteRegionUrlsWithName=region1;http://region1host/eureka/v2,region2;http://region2host/eureka/v2
-     </PRE>
+     * <PRE>
+     * eureka.remoteRegionUrlsWithName=region1;http://region1host/eureka/v2,region2;http://region2host/eureka/v2
+     * </PRE>
      * The above property will result in the following map:
-     <PRE>
-     region1->"http://region1host/eureka/v2"
-     region2->"http://region2host/eureka/v2"
-     </PRE>
+     * <PRE>
+     * region1->"http://region1host/eureka/v2"
+     * region2->"http://region2host/eureka/v2"
+     * </PRE>
+     *
      * @return A map of region name to remote region URL parsed from the property specified above. If there is no
      * property available, then an empty map is returned.
      */
@@ -534,7 +535,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
                 logger.error("Error reading eureka remote region urls from property {}. "
                                 + "Invalid entry {} for remote region url. The entry must contain region name and url "
                                 + "separated by a {}. Ignoring this entry.",
-                        new String[]{propName, remoteRegionUrlWithNamePair, pairSplitChar});
+                        new String[] {propName, remoteRegionUrlWithNamePair, pairSplitChar});
             } else {
                 String regionName = pairSplit[0];
                 String regionUrl = pairSplit[1];
@@ -702,7 +703,8 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
 
     @Override
     public AwsBindingStrategy getBindingStrategy() {
-        return AwsBindingStrategy.valueOf(configInstance.getStringProperty(namespace + "awsBindingStrategy", AwsBindingStrategy.EIP.name()).get().toUpperCase());
+        return AwsBindingStrategy.valueOf(configInstance.getStringProperty(namespace + "awsBindingStrategy", AwsBindingStrategy.EIP.name())
+                .get().toUpperCase());
     }
 
     @Override

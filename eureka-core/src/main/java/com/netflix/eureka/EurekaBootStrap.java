@@ -172,7 +172,7 @@ public class EurekaBootStrap implements ServletContextListener {
         ServerCodecs serverCodecs = new DefaultServerCodecs(eurekaServerConfig);
 
         // 创建 Eureka-Client
-        ApplicationInfoManager applicationInfoManager = null;
+        ApplicationInfoManager applicationInfoManager;
         if (eurekaClient == null) {
             // 获取实例配置
             EurekaInstanceConfig instanceConfig = isCloud(ConfigurationManager.getDeploymentContext())
