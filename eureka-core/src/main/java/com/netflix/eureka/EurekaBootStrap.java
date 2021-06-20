@@ -16,7 +16,12 @@
 
 package com.netflix.eureka;
 
-import com.netflix.appinfo.*;
+import com.netflix.appinfo.ApplicationInfoManager;
+import com.netflix.appinfo.CloudInstanceConfig;
+import com.netflix.appinfo.DataCenterInfo;
+import com.netflix.appinfo.EurekaInstanceConfig;
+import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.MyDataCenterInstanceConfig;
 import com.netflix.appinfo.providers.EurekaConfigBasedInstanceInfoProvider;
 import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DeploymentContext;
@@ -85,7 +90,7 @@ public class EurekaBootStrap implements ServletContextListener {
     private static final String EUREKA_DATACENTER = "eureka.datacenter";
 
     protected volatile EurekaServerContext serverContext;
-    protected volatile AwsBinder awsBinder;
+    protected volatile AwsBinder           awsBinder;
 
     private EurekaClient eurekaClient;
 
@@ -183,14 +188,14 @@ public class EurekaBootStrap implements ServletContextListener {
             applicationInfoManager = new ApplicationInfoManager(
                     instanceConfig, new EurekaConfigBasedInstanceInfoProvider(instanceConfig).get());
 
-            // 获取默认的客户端配置，并创建eureka client
+            // 获取默认的客户端配置，并创建eureka client，里面会拉取注册表信息
             EurekaClientConfig eurekaClientConfig = new DefaultEurekaClientConfig();
             eurekaClient = new DiscoveryClient(applicationInfoManager, eurekaClientConfig);
         } else {
             applicationInfoManager = eurekaClient.getApplicationInfoManager();
         }
 
-        // 创建应用实例信息的注册表
+        // 创建 集群实例的注册表
         PeerAwareInstanceRegistry registry;
         if (isAws(applicationInfoManager.getInfo())) {
             registry = new AwsInstanceRegistry(
@@ -212,7 +217,7 @@ public class EurekaBootStrap implements ServletContextListener {
         }
 
         // 创建eureka集群节点集合
-        PeerEurekaNodes peerEurekaNodes = getPeerEurekaNodes(
+        PeerEurekaNodes peerEurekaNodes = this.getPeerEurekaNodes(
                 registry,
                 eurekaServerConfig,
                 eurekaClient.getEurekaClientConfig(),
@@ -252,17 +257,16 @@ public class EurekaBootStrap implements ServletContextListener {
      */
     protected PeerEurekaNodes getPeerEurekaNodes(PeerAwareInstanceRegistry registry,
                                                  EurekaServerConfig eurekaServerConfig,
-                                                 EurekaClientConfig eurekaClientConfig, ServerCodecs serverCodecs,
+                                                 EurekaClientConfig eurekaClientConfig,
+                                                 ServerCodecs serverCodecs,
                                                  ApplicationInfoManager applicationInfoManager) {
-        PeerEurekaNodes peerEurekaNodes = new PeerEurekaNodes(
+        return new PeerEurekaNodes(
                 registry,
                 eurekaServerConfig,
                 eurekaClientConfig,
                 serverCodecs,
                 applicationInfoManager
         );
-
-        return peerEurekaNodes;
     }
 
     /**

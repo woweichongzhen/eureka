@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
  */
 public class ApplicationResourceTest extends AbstractTester {
     private ApplicationResource applicationResource;
-    private Application testApplication;
+    private Application         testApplication;
 
     @Override
     @Before
@@ -39,7 +39,8 @@ public class ApplicationResourceTest extends AbstractTester {
         InstanceInfoGenerator instanceInfos = InstanceInfoGenerator.newBuilder(6, 1).build();
         testApplication = instanceInfos.toApplications().getRegisteredApplications().get(0);
 
-        applicationResource = new ApplicationResource(testApplication.getName(), serverContext.getServerConfig(), serverContext.getRegistry());
+        applicationResource = new ApplicationResource(testApplication.getName(), serverContext.getServerConfig(),
+                serverContext.getRegistry());
 
         for (InstanceInfo instanceInfo : testApplication.getInstances()) {
             registry.register(instanceInfo, false);
@@ -85,7 +86,7 @@ public class ApplicationResourceTest extends AbstractTester {
     @Test
     public void testGoodRegistration() throws Exception {
         InstanceInfo noIdInfo = InstanceInfoGenerator.takeOne();
-        Response response = applicationResource.addInstance(noIdInfo, false+"");
+        Response response = applicationResource.addInstance(noIdInfo, false + "");
         assertThat(response.getStatus(), is(204));
     }
 
@@ -93,32 +94,32 @@ public class ApplicationResourceTest extends AbstractTester {
     public void testBadRegistration() throws Exception {
         InstanceInfo instanceInfo = spy(InstanceInfoGenerator.takeOne());
         when(instanceInfo.getId()).thenReturn(null);
-        Response response = applicationResource.addInstance(instanceInfo, false+"");
+        Response response = applicationResource.addInstance(instanceInfo, false + "");
         assertThat(response.getStatus(), is(400));
 
         instanceInfo = spy(InstanceInfoGenerator.takeOne());
         when(instanceInfo.getHostName()).thenReturn(null);
-        response = applicationResource.addInstance(instanceInfo, false+"");
+        response = applicationResource.addInstance(instanceInfo, false + "");
         assertThat(response.getStatus(), is(400));
 
         instanceInfo = spy(InstanceInfoGenerator.takeOne());
         when(instanceInfo.getIPAddr()).thenReturn(null);
-        response = applicationResource.addInstance(instanceInfo, false+"");
+        response = applicationResource.addInstance(instanceInfo, false + "");
         assertThat(response.getStatus(), is(400));
 
         instanceInfo = spy(InstanceInfoGenerator.takeOne());
         when(instanceInfo.getAppName()).thenReturn("");
-        response = applicationResource.addInstance(instanceInfo, false+"");
+        response = applicationResource.addInstance(instanceInfo, false + "");
         assertThat(response.getStatus(), is(400));
 
         instanceInfo = spy(InstanceInfoGenerator.takeOne());
         when(instanceInfo.getAppName()).thenReturn(applicationResource.getName() + "extraExtra");
-        response = applicationResource.addInstance(instanceInfo, false+"");
+        response = applicationResource.addInstance(instanceInfo, false + "");
         assertThat(response.getStatus(), is(400));
 
         instanceInfo = spy(InstanceInfoGenerator.takeOne());
         when(instanceInfo.getDataCenterInfo()).thenReturn(null);
-        response = applicationResource.addInstance(instanceInfo, false+"");
+        response = applicationResource.addInstance(instanceInfo, false + "");
         assertThat(response.getStatus(), is(400));
 
         instanceInfo = spy(InstanceInfoGenerator.takeOne());
@@ -128,7 +129,7 @@ public class ApplicationResourceTest extends AbstractTester {
                 return null;
             }
         });
-        response = applicationResource.addInstance(instanceInfo, false+"");
+        response = applicationResource.addInstance(instanceInfo, false + "");
         assertThat(response.getStatus(), is(400));
     }
 
@@ -146,7 +147,8 @@ public class ApplicationResourceTest extends AbstractTester {
             ConfigurationManager.getConfigInstance().setProperty("eureka.experimental.registration.validation.dataCenterInfoId", "false");
             instanceInfo = spy(InstanceInfoGenerator.takeOne());
             assertThat(instanceInfo.getDataCenterInfo(), instanceOf(AmazonInfo.class));
-            ((AmazonInfo) instanceInfo.getDataCenterInfo()).getMetadata().remove(AmazonInfo.MetaDataKey.instanceId.getName());  // clear the Id
+            ((AmazonInfo) instanceInfo.getDataCenterInfo()).getMetadata().remove(
+                    AmazonInfo.MetaDataKey.instanceId.getName());  // clear the Id
             response = applicationResource.addInstance(instanceInfo, false + "");
             assertThat(response.getStatus(), is(204));
 

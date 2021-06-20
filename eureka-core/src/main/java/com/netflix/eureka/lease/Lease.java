@@ -56,7 +56,7 @@ public class Lease<T> {
     /**
      * 实体
      */
-    private T holder;
+    private final T holder;
 
     /**
      * 取消注册时间戳
@@ -66,7 +66,7 @@ public class Lease<T> {
     /**
      * 注册时间戳
      */
-    private long registrationTimestamp;
+    private final long registrationTimestamp;
 
     /**
      * 开始服务时间戳
@@ -82,14 +82,13 @@ public class Lease<T> {
     /**
      * 租约持续时长，单位：毫秒
      */
-    private long duration;
+    private final long duration;
 
     public Lease(T r, int durationInSecs) {
         holder = r;
         registrationTimestamp = System.currentTimeMillis();
         lastUpdateTimestamp = registrationTimestamp;
         duration = (durationInSecs * 1000);
-
     }
 
     /**
@@ -101,7 +100,6 @@ public class Lease<T> {
      */
     public void renew() {
         lastUpdateTimestamp = System.currentTimeMillis() + duration;
-
     }
 
     /**
@@ -142,18 +140,18 @@ public class Lease<T> {
      * Checks if the lease of a given {@link com.netflix.appinfo.InstanceInfo} has expired or not.
      */
     public boolean isExpired() {
-        return isExpired(0l);
+        return isExpired(0L);
     }
 
     /**
-     * 已cancel则过期
+     * 判断是否过期
      * <p>
      * 当前时间 和
-     * 上次更新时间 加上 额外的续约时间 加上 周期
+     * 上次更新时间 + 周期 + 补偿时间
      * 比较，大于则过期
      * <p>
-     * 由于renew（）做错了事，并将 lastUpdateTimestamp 设置为 + duration 多于持续时间，
-     * 因此有效期实际上是2 *持续时间。
+     * 由于 renew 方法做错了事，并将 lastUpdateTimestamp 设置为 + duration 多于持续时间，
+     * 因此有效期实际上是2 * 持续时间。
      * 这是一个小错误，仅会影响那些不正常的实例。
      * 由于可能会对现有使用产生广泛影响，因此此问题不会得到解决。
      * <p>
@@ -167,7 +165,8 @@ public class Lease<T> {
      * @param additionalLeaseMs any additional lease time to add to the lease evaluation in ms.
      */
     public boolean isExpired(long additionalLeaseMs) {
-        return (evictionTimestamp > 0 || System.currentTimeMillis() > (lastUpdateTimestamp + duration + additionalLeaseMs));
+        return evictionTimestamp > 0
+                || System.currentTimeMillis() > (lastUpdateTimestamp + duration + additionalLeaseMs);
     }
 
     /**

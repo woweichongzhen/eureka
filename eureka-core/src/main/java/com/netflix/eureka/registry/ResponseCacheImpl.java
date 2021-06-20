@@ -92,7 +92,7 @@ public class ResponseCacheImpl implements ResponseCache {
     /**
      * 版本增量计数
      */
-    private static final AtomicLong versionDeltaLegacy = new AtomicLong(0);
+    private static final AtomicLong versionDeltaLegacy            = new AtomicLong(0);
     private static final AtomicLong versionDeltaWithRegionsLegacy = new AtomicLong(0);
 
     /**
@@ -108,17 +108,17 @@ public class ResponseCacheImpl implements ResponseCache {
     /**
      * 增量的次数
      */
-    private final AtomicLong versionDelta = new AtomicLong(0);
+    private final AtomicLong versionDelta            = new AtomicLong(0);
     private final AtomicLong versionDeltaWithRegions = new AtomicLong(0);
 
-    private final Timer serializeAllAppsTimer = Monitors.newTimer("serialize-all");
-    private final Timer serializeDeltaAppsTimer = Monitors.newTimer("serialize-all-delta");
-    private final Timer serializeAllAppsWithRemoteRegionTimer = Monitors.newTimer("serialize-all_remote_region");
+    private final Timer serializeAllAppsTimer                   = Monitors.newTimer("serialize-all");
+    private final Timer serializeDeltaAppsTimer                 = Monitors.newTimer("serialize-all-delta");
+    private final Timer serializeAllAppsWithRemoteRegionTimer   = Monitors.newTimer("serialize-all_remote_region");
     private final Timer serializeDeltaAppsWithRemoteRegionTimer = Monitors.newTimer("serialize-all" +
             "-delta_remote_region");
-    private final Timer serializeOneApptimer = Monitors.newTimer("serialize-one");
-    private final Timer serializeViptimer = Monitors.newTimer("serialize-one-vip");
-    private final Timer compressPayloadTimer = Monitors.newTimer("compress-payload");
+    private final Timer serializeOneApptimer                    = Monitors.newTimer("serialize-one");
+    private final Timer serializeViptimer                       = Monitors.newTimer("serialize-one-vip");
+    private final Timer compressPayloadTimer                    = Monitors.newTimer("compress-payload");
 
     /**
      * 此映射将不带区域的键映射到带区域的键列表（由客户端提供）
@@ -138,7 +138,7 @@ public class ResponseCacheImpl implements ResponseCache {
     /**
      * 只读缓存
      */
-    private final ConcurrentMap<Key, Value> readOnlyCacheMap = new ConcurrentHashMap<Key, Value>();
+    private final ConcurrentMap<Key, Value> readOnlyCacheMap = new ConcurrentHashMap<>();
 
     /**
      * 固定过期 + 固定大小的读写缓存
@@ -151,8 +151,8 @@ public class ResponseCacheImpl implements ResponseCache {
     private final boolean shouldUseReadOnlyResponseCache;
 
     private final AbstractInstanceRegistry registry;
-    private final EurekaServerConfig serverConfig;
-    private final ServerCodecs serverCodecs;
+    private final EurekaServerConfig       serverConfig;
+    private final ServerCodecs             serverCodecs;
 
     ResponseCacheImpl(EurekaServerConfig serverConfig, ServerCodecs serverCodecs, AbstractInstanceRegistry registry) {
         this.serverConfig = serverConfig;
@@ -488,6 +488,7 @@ public class ResponseCacheImpl implements ResponseCache {
                 case Application:
                     boolean isRemoteRegionRequested = key.hasRegions();
                     if (ALL_APPS.equals(key.getName())) {
+                        // 全量获取
                         if (isRemoteRegionRequested) {
                             tracer = serializeAllAppsWithRemoteRegionTimer.start();
                             payload = getPayLoad(key, registry.getApplicationsFromMultipleRegions(key.getRegions()));
@@ -498,11 +499,13 @@ public class ResponseCacheImpl implements ResponseCache {
                             payload = getPayLoad(key, registry.getApplications());
                         }
                     } else if (ALL_APPS_DELTA.equals(key.getName())) {
+                        // 增量获取
                         if (isRemoteRegionRequested) {
                             tracer = serializeDeltaAppsWithRemoteRegionTimer.start();
                             versionDeltaWithRegions.incrementAndGet();
                             versionDeltaWithRegionsLegacy.incrementAndGet();
                             payload = getPayLoad(key,
+                                    // 重点
                                     registry.getApplicationDeltasFromMultipleRegions(key.getRegions()));
                         } else {
                             tracer = serializeDeltaAppsTimer.start();

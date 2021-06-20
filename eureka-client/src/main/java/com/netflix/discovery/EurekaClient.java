@@ -42,7 +42,7 @@ public interface EurekaClient extends LookupService {
      * @return an {@link com.netflix.discovery.shared.Applications} for the matching region. a Null value
      * is treated as the local region.
      */
-    public Applications getApplicationsForARegion(@Nullable String region);
+    Applications getApplicationsForARegion(@Nullable String region);
 
     /**
      * Get all applications registered with a specific eureka service.
@@ -50,7 +50,7 @@ public interface EurekaClient extends LookupService {
      * @param serviceUrl The string representation of the service url.
      * @return The registry information containing all applications.
      */
-    public Applications getApplications(String serviceUrl);
+    Applications getApplications(String serviceUrl);
 
     /**
      * Gets the list of instances matching the given VIP Address.
@@ -59,7 +59,7 @@ public interface EurekaClient extends LookupService {
      * @param secure     true if it is a secure vip address, false otherwise
      * @return - The list of {@link InstanceInfo} objects matching the criteria
      */
-    public List<InstanceInfo> getInstancesByVipAddress(String vipAddress, boolean secure);
+    List<InstanceInfo> getInstancesByVipAddress(String vipAddress, boolean secure);
 
     /**
      * Gets the list of instances matching the given VIP Address in the passed region.
@@ -70,7 +70,7 @@ public interface EurekaClient extends LookupService {
      *                   assumed.
      * @return - The list of {@link InstanceInfo} objects matching the criteria, empty list if not instances found.
      */
-    public List<InstanceInfo> getInstancesByVipAddress(String vipAddress, boolean secure, @Nullable String region);
+    List<InstanceInfo> getInstancesByVipAddress(String vipAddress, boolean secure, @Nullable String region);
 
     /**
      * Gets the list of instances matching the given VIP Address and the given
@@ -82,7 +82,7 @@ public interface EurekaClient extends LookupService {
      * @param secure     true if it is a secure vip address, false otherwise.
      * @return - The list of {@link InstanceInfo} objects matching the criteria.
      */
-    public List<InstanceInfo> getInstancesByVipAddressAndAppName(String vipAddress, String appName, boolean secure);
+    List<InstanceInfo> getInstancesByVipAddressAndAppName(String vipAddress, String appName, boolean secure);
 
     // ==========================
     // getters for local metadata
@@ -91,12 +91,12 @@ public interface EurekaClient extends LookupService {
     /**
      * @return in String form all regions (local + remote) that can be accessed by this client
      */
-    public Set<String> getAllKnownRegions();
+    Set<String> getAllKnownRegions();
 
     /**
      * @return the current self instance status as seen on the Eureka server.
      */
-    public InstanceInfo.InstanceStatus getInstanceRemoteStatus();
+    InstanceInfo.InstanceStatus getInstanceRemoteStatus();
 
     /**
      * @param zone the zone in which the client resides
@@ -106,7 +106,7 @@ public interface EurekaClient extends LookupService {
      * Get the list of all eureka service urls for the eureka client to talk to.
      */
     @Deprecated
-    public List<String> getDiscoveryServiceUrls(String zone);
+    List<String> getDiscoveryServiceUrls(String zone);
 
     /**
      * @param instanceZone   The zone in which the client resides
@@ -117,7 +117,7 @@ public interface EurekaClient extends LookupService {
      * Get the list of all eureka service urls from properties file for the eureka client to talk to.
      */
     @Deprecated
-    public List<String> getServiceUrlsFromConfig(String instanceZone, boolean preferSameZone);
+    List<String> getServiceUrlsFromConfig(String instanceZone, boolean preferSameZone);
 
     /**
      * @param instanceZone   The zone in which the client resides.
@@ -131,7 +131,7 @@ public interface EurekaClient extends LookupService {
      * again picks one randomly. This way the traffic will be distributed in the case of failures.
      */
     @Deprecated
-    public List<String> getServiceUrlsFromDNS(String instanceZone, boolean preferSameZone);
+    List<String> getServiceUrlsFromDNS(String instanceZone, boolean preferSameZone);
 
     // ===========================
     // healthcheck related methods
@@ -148,7 +148,7 @@ public interface EurekaClient extends LookupService {
      * {@link EurekaClientConfig#getInstanceInfoReplicationIntervalSeconds()}.
      */
     @Deprecated
-    public void registerHealthCheckCallback(HealthCheckCallback callback);
+    void registerHealthCheckCallback(HealthCheckCallback callback);
 
     /**
      * Register {@link HealthCheckHandler} with the eureka client.
@@ -160,7 +160,7 @@ public interface EurekaClient extends LookupService {
      *
      * @param healthCheckHandler app specific healthcheck handler.
      */
-    public void registerHealthCheck(HealthCheckHandler healthCheckHandler);
+    void registerHealthCheck(HealthCheckHandler healthCheckHandler);
 
     /**
      * Register {@link EurekaEventListener} with the eureka client.
@@ -174,7 +174,7 @@ public interface EurekaClient extends LookupService {
      *
      * @param eventListener
      */
-    public void registerEventListener(EurekaEventListener eventListener);
+    void registerEventListener(EurekaEventListener eventListener);
 
     /**
      * Unregister a {@link EurekaEventListener} previous registered with {@link EurekaClient#registerEventListener}
@@ -183,13 +183,14 @@ public interface EurekaClient extends LookupService {
      * @param eventListener
      * @return True if removed otherwise false if the listener was never registered.
      */
-    public boolean unregisterEventListener(EurekaEventListener eventListener);
+    boolean unregisterEventListener(EurekaEventListener eventListener);
 
     /**
      * 获取当前注册的监看检查处理器
+     *
      * @return the current registered healthcheck handler
      */
-    public HealthCheckHandler getHealthCheckHandler();
+    HealthCheckHandler getHealthCheckHandler();
 
     // =============
     // other methods
@@ -198,15 +199,15 @@ public interface EurekaClient extends LookupService {
     /**
      * Shuts down Eureka Client. Also sends a deregistration request to the eureka server.
      */
-    public void shutdown();
+    void shutdown();
 
     /**
      * @return the configuration of this eureka client
      */
-    public EurekaClientConfig getEurekaClientConfig();
+    EurekaClientConfig getEurekaClientConfig();
 
     /**
      * @return the application info manager of this eureka client
      */
-    public ApplicationInfoManager getApplicationInfoManager();
+    ApplicationInfoManager getApplicationInfoManager();
 }

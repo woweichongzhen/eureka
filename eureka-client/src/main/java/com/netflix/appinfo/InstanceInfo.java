@@ -32,7 +32,12 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -64,7 +69,7 @@ public class InstanceInfo {
      */
     public static class PortWrapper {
         private final boolean enabled;
-        private final int port;
+        private final int     port;
 
         @JsonCreator
         public PortWrapper(@JsonProperty("@enabled") boolean enabled, @JsonProperty("$") int port) {
@@ -83,9 +88,9 @@ public class InstanceInfo {
 
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfo.class);
 
-    public static final int DEFAULT_PORT = 7001;
+    public static final int DEFAULT_PORT        = 7001;
     public static final int DEFAULT_SECURE_PORT = 7002;
-    public static final int DEFAULT_COUNTRY_ID = 1; // US
+    public static final int DEFAULT_COUNTRY_ID  = 1; // US
 
     // The (fixed) instanceId for this instanceInfo. This should be unique within the scope of the appName.
     private volatile String instanceId;
@@ -98,67 +103,67 @@ public class InstanceInfo {
 
     private static final String SID_DEFAULT = "na";
     @Deprecated
-    private volatile String sid = SID_DEFAULT;
+    private volatile     String sid         = SID_DEFAULT;
 
-    private volatile int port = DEFAULT_PORT;
+    private volatile int port       = DEFAULT_PORT;
     private volatile int securePort = DEFAULT_SECURE_PORT;
 
     @Auto
-    private volatile String homePageUrl;
+    private volatile String         homePageUrl;
     @Auto
-    private volatile String statusPageUrl;
+    private volatile String         statusPageUrl;
     @Auto
-    private volatile String healthCheckUrl;
+    private volatile String         healthCheckUrl;
     @Auto
-    private volatile String secureHealthCheckUrl;
+    private volatile String         secureHealthCheckUrl;
     @Auto
-    private volatile String vipAddress;
+    private volatile String         vipAddress;
     @Auto
-    private volatile String secureVipAddress;
+    private volatile String         secureVipAddress;
     @XStreamOmitField
-    private String statusPageRelativeUrl;
+    private          String         statusPageRelativeUrl;
     @XStreamOmitField
-    private String statusPageExplicitUrl;
+    private          String         statusPageExplicitUrl;
     @XStreamOmitField
-    private String healthCheckRelativeUrl;
+    private          String         healthCheckRelativeUrl;
     @XStreamOmitField
-    private String healthCheckSecureExplicitUrl;
+    private          String         healthCheckSecureExplicitUrl;
     @XStreamOmitField
-    private String vipAddressUnresolved;
+    private          String         vipAddressUnresolved;
     @XStreamOmitField
-    private String secureVipAddressUnresolved;
+    private          String         secureVipAddressUnresolved;
     @XStreamOmitField
-    private String healthCheckExplicitUrl;
+    private          String         healthCheckExplicitUrl;
     @Deprecated
-    private volatile int countryId = DEFAULT_COUNTRY_ID; // Defaults to US
-    private volatile boolean isSecurePortEnabled = false;
-    private volatile boolean isUnsecurePortEnabled = true;
+    private volatile int            countryId             = DEFAULT_COUNTRY_ID; // Defaults to US
+    private volatile boolean        isSecurePortEnabled   = false;
+    private volatile boolean        isUnsecurePortEnabled = true;
     private volatile DataCenterInfo dataCenterInfo;
-    private volatile String hostName;
-    private volatile InstanceStatus status = InstanceStatus.UP;
+    private volatile String         hostName;
+    private volatile InstanceStatus status                = InstanceStatus.UP;
 
     /**
      * 设置此实例的覆盖状态。通常由外部进程设置，以禁止实例获取流量。
      */
-    private volatile InstanceStatus overriddenStatus = InstanceStatus.UNKNOWN;
-    @XStreamOmitField
+    private volatile InstanceStatus      overriddenStatus              = InstanceStatus.UNKNOWN;
     /**
      * 标记实例信息是否更改，更改则在下次心跳中通知
      */
-    private volatile boolean isInstanceInfoDirty = false;
+    @XStreamOmitField
+    private volatile boolean             isInstanceInfoDirty           = false;
     /**
      * 实例租期续约信息
      */
-    private volatile LeaseInfo leaseInfo;
+    private volatile LeaseInfo           leaseInfo;
     @Auto
-    private volatile Boolean isCoordinatingDiscoveryServer = Boolean.FALSE;
+    private volatile Boolean             isCoordinatingDiscoveryServer = Boolean.FALSE;
     @XStreamAlias("metadata")
     private volatile Map<String, String> metadata;
     /**
      * 最后一次更新的时间戳
      */
     @Auto
-    private volatile Long lastUpdatedTimestamp;
+    private volatile Long                lastUpdatedTimestamp;
 
     /**
      * 实例信息被更改的时间
@@ -172,8 +177,8 @@ public class InstanceInfo {
     @Auto
     private volatile ActionType actionType;
     @Auto
-    private volatile String asgName;
-    private String version = VERSION_UNKNOWN;
+    private volatile String     asgName;
+    private          String     version = VERSION_UNKNOWN;
 
     private InstanceInfo() {
         this.metadata = new ConcurrentHashMap<String, String>();
@@ -333,7 +338,6 @@ public class InstanceInfo {
         this.version = ii.version;
     }
 
-
     public enum InstanceStatus {
         /**
          * 准备接受流量
@@ -412,10 +416,10 @@ public class InstanceInfo {
     }
 
     public static final class Builder {
-        private static final String COLON = ":";
-        private static final String HTTPS_PROTOCOL = "https://";
-        private static final String HTTP_PROTOCOL = "http://";
-        private final Function<String, String> intern;
+        private static final String                   COLON          = ":";
+        private static final String                   HTTPS_PROTOCOL = "https://";
+        private static final String                   HTTP_PROTOCOL  = "http://";
+        private final        Function<String, String> intern;
 
         private static final class LazyHolder {
             private static final VipAddressResolver DEFAULT_VIP_ADDRESS_RESOLVER = new Archaius1VipAddressResolver();
@@ -472,7 +476,6 @@ public class InstanceInfo {
             result.appName = appName;
             return this;
         }
-
 
         public Builder setAppGroupName(String appGroupName) {
             if (appGroupName != null) {
@@ -944,7 +947,6 @@ public class InstanceInfo {
         return appGroupName;
     }
 
-
     /**
      * Return the default network address to connect to this instance. Typically this would be the fully
      * qualified public hostname.
@@ -1300,7 +1302,6 @@ public class InstanceInfo {
         setIsDirty();
         return lastDirtyTimestamp;
     }
-
 
     /**
      * 如果重置的时间大于以前的时间，重置变更标志

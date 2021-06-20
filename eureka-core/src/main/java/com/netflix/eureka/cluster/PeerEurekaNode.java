@@ -72,12 +72,12 @@ public class PeerEurekaNode {
 
     public static final String HEADER_REPLICATION = "x-netflix-discovery-replication";
 
-    private final String serviceUrl;
-    private final EurekaServerConfig config;
-    private final long maxProcessingDelayMs;
+    private final String                    serviceUrl;
+    private final EurekaServerConfig        config;
+    private final long                      maxProcessingDelayMs;
     private final PeerAwareInstanceRegistry registry;
-    private final String targetHost;
-    private final HttpReplicationClient replicationClient;
+    private final String                    targetHost;
+    private final HttpReplicationClient     replicationClient;
 
     /**
      * 批量同步分发器
@@ -141,13 +141,13 @@ public class PeerEurekaNode {
      *
      * @param info the instance information {@link InstanceInfo} of any instance
      *             that is send to this instance.
-     * @throws Exception
      */
-    public void register(final InstanceInfo info) throws Exception {
+    public void register(final InstanceInfo info) {
         long expiryTime = System.currentTimeMillis() + getLeaseRenewalOf(info);
         batchingDispatcher.process(
                 taskId("register", info),
                 new InstanceReplicationTask(targetHost, Action.Register, info, null, true) {
+                    @Override
                     public EurekaHttpResponse<Void> execute() {
                         return replicationClient.register(info);
                     }
@@ -162,9 +162,8 @@ public class PeerEurekaNode {
      *
      * @param appName the application name of the instance.
      * @param id      the unique identifier of the instance.
-     * @throws Exception
      */
-    public void cancel(final String appName, final String id) throws Exception {
+    public void cancel(final String appName, final String id) {
         long expiryTime = System.currentTimeMillis() + maxProcessingDelayMs;
         batchingDispatcher.process(
                 taskId("cancel", appName, id),
@@ -255,6 +254,7 @@ public class PeerEurekaNode {
         nonBatchingDispatcher.process(
                 asgName,
                 new AsgReplicationTask(targetHost, Action.StatusUpdate, asgName, newStatus) {
+                    @Override
                     public EurekaHttpResponse<?> execute() {
                         return replicationClient.statusUpdate(asgName, newStatus);
                     }

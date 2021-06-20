@@ -11,8 +11,18 @@ import com.netflix.servo.stats.StatsConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.netflix.eureka.Names.METRIC_REPLICATION_PREFIX;
@@ -77,7 +87,7 @@ class AcceptorExecutor<ID, T> {
     /**
      * 接收任务队列
      */
-    private final BlockingQueue<TaskHolder<ID, T>> acceptorQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<TaskHolder<ID, T>> acceptorQueue  = new LinkedBlockingQueue<>();
     /**
      * 重新执行任务队列
      */
@@ -91,29 +101,29 @@ class AcceptorExecutor<ID, T> {
     /**
      * 待执行任务映射
      */
-    private final Map<ID, TaskHolder<ID, T>> pendingTasks = new HashMap<>();
+    private final Map<ID, TaskHolder<ID, T>> pendingTasks    = new HashMap<>();
     /**
      * 待执行队列
      */
-    private final Deque<ID> processingOrder = new LinkedList<>();
+    private final Deque<ID>                  processingOrder = new LinkedList<>();
 
     /**
      * 单任务工作请求信号量
      */
-    private final Semaphore singleItemWorkRequests = new Semaphore(0);
+    private final Semaphore                        singleItemWorkRequests = new Semaphore(0);
     /**
      * 单任务工作队列
      */
-    private final BlockingQueue<TaskHolder<ID, T>> singleItemWorkQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<TaskHolder<ID, T>> singleItemWorkQueue    = new LinkedBlockingQueue<>();
 
     /**
      * 批量任务工作请求信号量
      */
-    private final Semaphore batchWorkRequests = new Semaphore(0);
+    private final Semaphore                              batchWorkRequests = new Semaphore(0);
     /**
      * 批量任务工作队列
      */
-    private final BlockingQueue<List<TaskHolder<ID, T>>> batchWorkQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<List<TaskHolder<ID, T>>> batchWorkQueue    = new LinkedBlockingQueue<>();
 
     /**
      * 网络通信整形器，用于计算失败的任务还需延长多长时间
@@ -185,7 +195,7 @@ class AcceptorExecutor<ID, T> {
      * 处理任务，添加到接受者队列，接收过的任务+1
      */
     void process(ID id, T task, long expiryTime) {
-        acceptorQueue.add(new TaskHolder<ID, T>(id, task, expiryTime));
+        acceptorQueue.add(new TaskHolder<>(id, task, expiryTime));
         acceptedTasks++;
     }
 

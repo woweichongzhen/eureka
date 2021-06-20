@@ -6,7 +6,11 @@ import com.netflix.discovery.util.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -159,6 +163,7 @@ class InstanceInfoReplicator implements Runnable {
         }
     }
 
+    @Override
     public void run() {
         try {
             // 刷新当前的实例信息，如果状态改变了，设置新的状态，并设置isDirty为true，并通知监听器

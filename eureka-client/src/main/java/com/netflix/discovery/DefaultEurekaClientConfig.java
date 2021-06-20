@@ -31,7 +31,55 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.netflix.discovery.PropertyBasedClientConfigConstants.*;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.BACKUP_REGISTRY_CLASSNAME_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.CACHEREFRESH_BACKOFF_BOUND_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.CACHEREFRESH_THREADPOOL_SIZE_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.CLIENT_DATA_ACCEPT_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.CLIENT_DECODER_NAME_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.CLIENT_ENCODER_NAME_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.CLIENT_REGION_FALLBACK_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.CLIENT_REGION_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.CONFIG_AVAILABILITY_ZONE_PREFIX;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.CONFIG_DOLLAR_REPLACEMENT_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.CONFIG_ESCAPE_CHAR_REPLACEMENT_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.CONFIG_EUREKA_SERVER_SERVICE_URL_PREFIX;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.CONFIG_EXPERIMENTAL_PREFIX;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_CONNECTION_IDLE_TIMEOUT_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_CONNECT_TIMEOUT_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_DNS_NAME_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_FALLBACK_DNS_NAME_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_FALLBACK_PORT_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_FALLBACK_URL_CONTEXT_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_GZIP_CONTENT_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_MAX_CONNECTIONS_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_MAX_CONNECTIONS_PER_HOST_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_PORT_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_PROXY_HOST_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_PROXY_PASSWORD_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_PROXY_PORT_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_PROXY_USERNAME_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_READ_TIMEOUT_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_URL_CONTEXT_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.EUREKA_SERVER_URL_POLL_INTERVAL_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.FETCH_REGISTRY_ENABLED_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.FETCH_SINGLE_VIP_ONLY_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.HEARTBEAT_BACKOFF_BOUND_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.HEARTBEAT_THREADPOOL_SIZE_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.INITIAL_REGISTRATION_REPLICATION_DELAY_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.REGISTRATION_ENABLED_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.REGISTRATION_REPLICATION_INTERVAL_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.REGISTRY_REFRESH_INTERVAL_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.SHOULD_ALLOW_REDIRECTS_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.SHOULD_DISABLE_DELTA_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.SHOULD_ENFORCE_REGISTRATION_AT_INIT;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.SHOULD_FETCH_REMOTE_REGION_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.SHOULD_FILTER_ONLY_UP_INSTANCES_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.SHOULD_LOG_DELTA_DIFF_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.SHOULD_ONDEMAND_UPDATE_STATUS_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.SHOULD_PREFER_SAME_ZONE_SERVER_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.SHOULD_UNREGISTER_ON_SHUTDOWN_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.SHOULD_USE_DNS_KEY;
+import static com.netflix.discovery.PropertyBasedClientConfigConstants.Values;
 
 /**
  * 基于配置文件的 Eureka-Client 配置实现类
@@ -337,9 +385,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
         return configInstance.getBooleanProperty(namespace + SHOULD_ALLOW_REDIRECTS_KEY, false).get();
     }
 
-    /*
-     * (non-Javadoc)
-     *
+    /**
      * @see com.netflix.discovery.EurekaClientConfig#shouldLogDeltaDiff()
      */
     @Override
@@ -348,9 +394,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 namespace + SHOULD_LOG_DELTA_DIFF_KEY, false).get();
     }
 
-    /*
-     * (non-Javadoc)
-     *
+    /**
      * @see com.netflix.discovery.EurekaClientConfig#shouldDisableDelta()
      */
     @Override

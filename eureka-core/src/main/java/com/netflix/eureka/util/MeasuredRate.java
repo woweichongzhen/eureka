@@ -69,7 +69,6 @@ public class MeasuredRate {
     public synchronized void start() {
         if (!isActive) {
             timer.schedule(new TimerTask() {
-
                 @Override
                 public void run() {
                     try {

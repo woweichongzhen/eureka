@@ -213,7 +213,6 @@ public class ApplicationsResource {
             @HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding,
             @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept,
             @Context UriInfo uriInfo, @Nullable @QueryParam("regions") String regionsStr) {
-
         boolean isRemoteRegionRequested = null != regionsStr && !regionsStr.isEmpty();
 
         // If the delta flag is disabled in discovery or if the lease expiration

@@ -29,7 +29,16 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.AbstractQueue;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -57,9 +66,9 @@ import java.util.stream.Collectors;
 @JsonRootName("applications")
 public class Applications {
     private static class VipIndexSupport {
-        final AbstractQueue<InstanceInfo> instances = new ConcurrentLinkedQueue<>();
-        final AtomicLong roundRobinIndex = new AtomicLong(0);
-        final AtomicReference<List<InstanceInfo>> vipList =
+        final AbstractQueue<InstanceInfo>         instances       = new ConcurrentLinkedQueue<>();
+        final AtomicLong                          roundRobinIndex = new AtomicLong(0);
+        final AtomicReference<List<InstanceInfo>> vipList         =
                 new AtomicReference<List<InstanceInfo>>(Collections.emptyList());
 
         public AtomicLong getRoundRobinIndex() {
@@ -73,15 +82,15 @@ public class Applications {
 
     private static final String STATUS_DELIMITER = "_";
 
-    private String appsHashCode;
-    private Long versionDelta;
+    private       String                     appsHashCode;
+    private       Long                       versionDelta;
     @XStreamImplicit
     private final AbstractQueue<Application> applications;
 
     /**
-     * app应用程序缓存
+     * 应用缓存：appName->应用
      */
-    private final Map<String, Application> appNameApplicationMap;
+    private final Map<String, Application>     appNameApplicationMap;
     private final Map<String, VipIndexSupport> virtualHostNameAppMap;
     private final Map<String, VipIndexSupport> secureVirtualHostNameAppMap;
 
@@ -130,7 +139,7 @@ public class Applications {
      */
     @JsonProperty("application")
     public List<Application> getRegisteredApplications() {
-        return new ArrayList<Application>(this.applications);
+        return new ArrayList<>(this.applications);
     }
 
     /**

@@ -15,10 +15,13 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -105,31 +108,25 @@ public class PeerEurekaNodes {
     public void start() {
         // 创建 定时任务服务
         taskExecutor = Executors.newSingleThreadScheduledExecutor(
-                new ThreadFactory() {
-                    @Override
-                    public Thread newThread(Runnable r) {
-                        Thread thread = new Thread(r, "Eureka-PeerNodesUpdater");
-                        thread.setDaemon(true);
-                        return thread;
-                    }
+                r -> {
+                    Thread thread = new Thread(r, "Eureka-PeerNodesUpdater");
+                    thread.setDaemon(true);
+                    return thread;
                 }
         );
 
         try {
             // 初始化 集群节点信息
-            updatePeerEurekaNodes(resolvePeerUrls());
+            this.updatePeerEurekaNodes(resolvePeerUrls());
 
-            // 初始化固定周期更新集群节点信息的任务
-            Runnable peersUpdateTask = new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        updatePeerEurekaNodes(resolvePeerUrls());
-                    } catch (Throwable e) {
-                        logger.error("Cannot update the replica Nodes", e);
-                    }
-
+            // 初始化固定周期更新集群节点信息的任务，10分钟更新一次
+            Runnable peersUpdateTask = () -> {
+                try {
+                    updatePeerEurekaNodes(resolvePeerUrls());
+                } catch (Throwable e) {
+                    logger.error("Cannot update the replica Nodes", e);
                 }
+
             };
             taskExecutor.scheduleWithFixedDelay(
                     peersUpdateTask,
@@ -158,8 +155,7 @@ public class PeerEurekaNodes {
     }
 
     /**
-     * 获取集群同步url
-     * Resolve peer URLs.
+     * 获取集群同步url，并解析
      *
      * @return peer URLs with node's own URL filtered out
      */
@@ -233,7 +229,7 @@ public class PeerEurekaNodes {
         if (!toAdd.isEmpty()) {
             logger.info("Adding new peer nodes {}", toAdd);
             for (String peerUrl : toAdd) {
-                newNodeList.add(createPeerEurekaNode(peerUrl));
+                newNodeList.add(this.createPeerEurekaNode(peerUrl));
             }
         }
 
